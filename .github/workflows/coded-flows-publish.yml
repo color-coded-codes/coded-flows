@@ -12,28 +12,28 @@ on:
   release:
     types: [published]
 
+defaults:
+  run:
+    working-directory: coded-flows/
+
 jobs:
   deploy:
-
     runs-on: ubuntu-latest
 
     steps:
-    - uses: actions/checkout@v3
-    - name: Set up Python
-      uses: actions/setup-python@v3
-      with:
-        python-version: '3.8'
-    - name: Install Poetry
-      run: pip install poetry
+      - uses: actions/checkout@v3
+      - name: Set up Python
+        uses: actions/setup-python@v3
+        with:
+          python-version: '3.8'
+      - name: Install Poetry
+        run: pip install poetry
 
-    - name: Install dependencies with Poetry
-      run: poetry install
-      working-directory: coded-flows
-    
-    - name: Configure Poetry
-      run: poetry config pypi-token.pypi ${{ secrets.PYPI_API_TOKEN }}
-      working-directory: coded-flows
+      - name: Install dependencies with Poetry
+        run: poetry install
 
-    - name: Build and publish
-      run: poetry publish --build
-      working-directory: coded-flows
+      - name: Configure Poetry
+        run: poetry config pypi-token.pypi ${{ secrets.PYPI_API_TOKEN }}
+
+      - name: Build and publish
+        run: poetry publish --build
