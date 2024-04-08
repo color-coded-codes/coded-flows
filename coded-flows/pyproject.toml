@@ -14,6 +14,7 @@ pydantic = {version = "2.6.4", extras = ["email"]}
 email-validator = "2.0.0"
 pycountry = "22.3.5"
 pillow = "10.1.0"
+pydantic-extra-types = "^2.6.0"
 
 [tool.poetry.group.dev.dependencies]
 pytest = "^8.1.1"
