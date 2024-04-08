@@ -1,13 +1,18 @@
 from uuid import UUID
 from pathlib import Path
 from decimal import Decimal
-from datetime import datetime, date, time, timedelta
+from datetime import (
+    datetime as _datetime,
+    date as _date,
+    time as _time,
+    timedelta as _timedelta,
+)
 from typing import (
     Iterable,
     Deque,
     Callable,
     Any,
-    TypeVar,
+    TypeVar as _TypeVar,
     Dict,
     List,
     Tuple,
@@ -16,9 +21,9 @@ from typing import (
     AnyStr,
     Union,
 )
-from typing_extensions import TypeAlias
+from typing_extensions import TypeAlias as _TypeAlias
 from pydantic import (
-    TypeAdapter,
+    TypeAdapter as _TypeAdapter,
     AnyUrl,
     AnyHttpUrl,
     HttpUrl,
@@ -54,7 +59,6 @@ from pydantic import (
     Json,
     SecretStr,
     ByteSize,
-    PastDate,
 )
 from pydantic_extra_types.color import Color
 from pydantic_extra_types.country import (
@@ -67,27 +71,26 @@ from pydantic_extra_types.currency_code import Currency
 from pydantic_extra_types.coordinate import Longitude, Latitude, Coordinate
 from pydantic_extra_types.mac_address import MacAddress
 
-from pydantic_core import ValidationError
 
 from .extra import DataSeries, DataFrame, ArrowTable, NDArray, BytesIOType, PILImage
 
 
-Null: TypeAlias = None
-Str: TypeAlias = str
-Int: TypeAlias = int
-Float: TypeAlias = float
-Complex: TypeAlias = complex
-Number = TypeVar("Number", int, float, Decimal)
-Bool: TypeAlias = bool
-Datetime: TypeAlias = datetime
-Date: TypeAlias = date
-Time: TypeAlias = time
-Timedelta: TypeAlias = timedelta
-Bytes: TypeAlias = bytes
-Bytearray: TypeAlias = bytearray
+Null: _TypeAlias = None
+Str: _TypeAlias = str
+Int: _TypeAlias = int
+Float: _TypeAlias = float
+Complex: _TypeAlias = complex
+Number = _TypeVar("Number", int, float, Decimal)
+Bool: _TypeAlias = bool
+Datetime: _TypeAlias = _datetime
+Date: _TypeAlias = _date
+Time: _TypeAlias = _time
+Timedelta: _TypeAlias = _timedelta
+Bytes: _TypeAlias = bytes
+Bytearray: _TypeAlias = bytearray
 DataDict = Dict[str, List[Any]]
 DataRecords = List[Dict[str, Any]]
-MediaData: TypeAlias = Union[bytes, BytesIOType, NDArray]
+MediaData: _TypeAlias = Union[bytes, BytesIOType, NDArray]
 
 
 def list_of_supported_types():
@@ -461,7 +464,7 @@ def types_validation_mapping(main_type=None, is_json=False):
 
 
 def is_valid_value_type(value, value_type):
-    ta = TypeAdapter(value_type)
+    ta = _TypeAdapter(value_type)
     ta.validate_python(value)
 
 

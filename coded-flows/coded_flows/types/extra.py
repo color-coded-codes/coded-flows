@@ -5,14 +5,14 @@ import pyarrow as pa
 from numpy import ndarray
 from pydantic import GetCoreSchemaHandler
 from pydantic_core import core_schema
-from typing import Any
+from typing import Any, Type
 from PIL import Image
 
 
 class DataSeries(pd.Series):
     @classmethod
     def __get_pydantic_core_schema__(
-        cls, _source: type[Any], _handler: GetCoreSchemaHandler
+        cls, _source: Type[Any], _handler: GetCoreSchemaHandler
     ) -> core_schema.CoreSchema:
 
         return core_schema.is_instance_schema(
@@ -26,7 +26,7 @@ class DataSeries(pd.Series):
 class DataFrame(pd.DataFrame):
     @classmethod
     def __get_pydantic_core_schema__(
-        cls, _source: type[Any], _handler: GetCoreSchemaHandler
+        cls, _source: Type[Any], _handler: GetCoreSchemaHandler
     ) -> core_schema.CoreSchema:
 
         return core_schema.is_instance_schema(
@@ -41,7 +41,7 @@ class ArrowTable:
 
     @classmethod
     def __get_pydantic_core_schema__(
-        cls, _source: type[Any], _handler: GetCoreSchemaHandler
+        cls, _source: Type[Any], _handler: GetCoreSchemaHandler
     ) -> core_schema.CoreSchema:
 
         return core_schema.is_instance_schema(
@@ -56,7 +56,7 @@ class NDArray:
 
     @classmethod
     def __get_pydantic_core_schema__(
-        cls, _source: type[Any], _handler: GetCoreSchemaHandler
+        cls, _source: Type[Any], _handler: GetCoreSchemaHandler
     ) -> core_schema.CoreSchema:
 
         return core_schema.is_instance_schema(
@@ -71,7 +71,7 @@ class BytesIOType:
 
     @classmethod
     def __get_pydantic_core_schema__(
-        cls, _source: type[Any], _handler: GetCoreSchemaHandler
+        cls, _source: Type[Any], _handler: GetCoreSchemaHandler
     ) -> core_schema.CoreSchema:
 
         return core_schema.is_instance_schema(
@@ -86,7 +86,7 @@ class PILImage:
 
     @classmethod
     def __get_pydantic_core_schema__(
-        cls, _source: type[Any], _handler: GetCoreSchemaHandler
+        cls, _source: Type[Any], _handler: GetCoreSchemaHandler
     ) -> core_schema.CoreSchema:
 
         def image_to_base64(image):
