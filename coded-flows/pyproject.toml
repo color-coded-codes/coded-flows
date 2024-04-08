@@ -7,13 +7,13 @@ readme = "README.md"
 
 [tool.poetry.dependencies]
 python = "^3.8.1"
-numpy = "1.24.4"
-pandas = "2.0.3"
-pyarrow = "14.0.2"
-pydantic = {version = "2.6.4", extras = ["email"]}
-email-validator = "2.0.0"
-pycountry = "22.3.5"
-pillow = "10.1.0"
+numpy = "^1.24.4"
+pandas = "^2.0.3"
+pyarrow = "^14.0.2"
+pydantic = {version = "^2.6.4", extras = ["email"]}
+email-validator = "^2.0.0"
+pycountry = "^22.3.5"
+pillow = "^10.1.0"
 pydantic-extra-types = "^2.6.0"
 
 [tool.poetry.group.dev.dependencies]
