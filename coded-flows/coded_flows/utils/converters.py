@@ -2,6 +2,7 @@ import base64
 import json
 from typing import Any, Callable, Dict, Tuple, Union
 from pydantic_core import MultiHostUrl
+import pandas as pd
 import pyarrow as pa
 from ..types import AnyUrl, Base64Str, Base64Bytes, DataSeries
 
@@ -75,6 +76,7 @@ conversion_mapping = {
         "Json",
         "NDArray",
         "ArrowTable",
+        "DataDict",
     ],
     "ArrowTable": [
         "DataFrame",
@@ -83,10 +85,17 @@ conversion_mapping = {
         "Dict",
         "Json",
         "NDArray",
+        "DataDict",
     ],
-    "NDArray": [],
-    "DataDict": [],
-    "DataRecords": [],
+    "NDArray": ["List", "Json"],
+    "DataDict": [
+        "DataFrame",
+        "ArrowTable",
+    ],
+    "DataRecords": [
+        "DataFrame",
+        "ArrowTable",
+    ],
     # Strings
     "Str": ["Json"],
     "AnyStr": [],
@@ -146,8 +155,9 @@ conversion_mapping = {
     "NatsDsn": [],  # <-- works as a Helper
     "MySQLDsn": [],  # <-- works as a Helper
     "MariaDBDsn": [],  # <-- works as a Helper
+    # MacAddress - str too
     "MacAddress": ["Json"],
-    # Email
+    # Email - str too
     "EmailStr": ["Json"],
     # bytes
     "Bytes": [],
@@ -206,6 +216,8 @@ def dataframe_to_type(output_type: str) -> Callable:
         return lambda x: x.to_dict("records")
     elif output_type == "Dict":
         return lambda x: x.to_dict("list")
+    elif output_type == "DataDict":
+        return lambda x: x.to_dict("list")
     elif output_type == "Json":
         return lambda x: x.to_json(orient="records")
     elif output_type == "NDArray":
@@ -221,12 +233,35 @@ def arrow_to_type(output_type: str) -> Callable:
         return lambda x: x.to_pylist()
     elif output_type == "Dict":
         return lambda x: x.to_pydict()
+    elif output_type == "DataDict":
+        return lambda x: x.to_pydict()
     elif output_type == "Json":
         return lambda x: json.dumps(x.to_pylist())
     elif output_type == "NDArray":
         return lambda x: x.to_pandas().to_numpy()
     elif output_type == "DataFrame":
         return lambda x: x.to_pandas()
+
+
+def numpy_to_type(output_type: str) -> Callable:
+    if output_type == "List":
+        return lambda x: x.tolist()
+    elif output_type == "Json":
+        return lambda x: json.dumps(x.tolist())
+
+
+def datadict_to_type(output_type: str) -> Callable:
+    if output_type == "DataFrame":
+        return lambda x: pd.DataFrame(x)
+    elif output_type == "ArrowTable":
+        return lambda x: pa.Table.from_pydict(x)
+
+
+def datarecords_to_type(output_type: str) -> Callable:
+    if output_type == "DataFrame":
+        return lambda x: pd.DataFrame(x)
+    elif output_type == "ArrowTable":
+        return lambda x: pa.Table.from_pylist(x)
 
 
 def jsonify(value: Any) -> str:
@@ -281,6 +316,14 @@ def get_conversion_function(input_type: str, output_type: str) -> Callable:
         return dataframe_to_type(output_type)
     elif input_type == "ArrowTable" and output_type in conversion_mapping["ArrowTable"]:
         return arrow_to_type(output_type)
+    elif input_type == "NDArray" and output_type in conversion_mapping["NDArray"]:
+        return numpy_to_type(output_type)
+    elif input_type == "DataDict" and output_type in conversion_mapping["DataDict"]:
+        return datadict_to_type(output_type)
+    elif (
+        input_type == "DataRecords" and output_type in conversion_mapping["DataRecords"]
+    ):
+        return datarecords_to_type(output_type)
     return None
 
 

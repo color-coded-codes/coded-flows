@@ -51,6 +51,20 @@ def sample_arrow_table():
     return table
 
 
+@pytest.fixture
+def sample_datadict():
+    return {"A": [1, 2, 3], "B": [4, 5, 6], "C": [7, 8, 9]}
+
+
+@pytest.fixture
+def sample_datarecords():
+    return [
+        {"A": 1, "B": 4, "C": 7},
+        {"A": 2, "B": 5, "C": 8},
+        {"A": 3, "B": 6, "C": 9},
+    ]
+
+
 # ==================================
 
 # ============== Tests =============
@@ -148,6 +162,14 @@ def test_dataframe_to_dict(sample_dataframe):
     assert isinstance(output, dict)
 
 
+def test_dataframe_to_datadict(sample_dataframe):
+    try:
+        output = convert_type(sample_dataframe, "DataFrame", "DataDict")
+    except TypeError as e:
+        pytest.fail(f"TypeError encountered for DataFrame -> DataDict: {e}")
+    assert all(isinstance(k, str) and isinstance(v, list) for k, v in output.items())
+
+
 def test_dataframe_to_json(sample_dataframe):
     try:
         output = convert_type(sample_dataframe, "DataFrame", "Json")
@@ -218,3 +240,59 @@ def test_arrow_to_dataframe(sample_arrow_table):
     except TypeError as e:
         pytest.fail(f"TypeError encountered for ArrowTable -> DataFrame: {e}")
     assert isinstance(output, pd.DataFrame)
+
+
+def test_arrow_to_datadict(sample_arrow_table):
+    try:
+        output = convert_type(sample_arrow_table, "ArrowTable", "DataDict")
+    except TypeError as e:
+        pytest.fail(f"TypeError encountered for ArrowTable -> DataDict: {e}")
+    assert all(isinstance(k, str) and isinstance(v, list) for k, v in output.items())
+
+
+def test_numpy_to_list(sample_numpy_array):
+    try:
+        output = convert_type(sample_numpy_array, "NDArray", "List")
+    except TypeError as e:
+        pytest.fail(f"TypeError encountered for NDArray -> List: {e}")
+    assert isinstance(output, list)
+
+
+def test_numpy_to_json(sample_numpy_array):
+    try:
+        output = convert_type(sample_numpy_array, "NDArray", "Json")
+    except TypeError as e:
+        pytest.fail(f"TypeError encountered for NDArray -> Json: {e}")
+    assert isinstance(output, str)
+
+
+def test_datadict_to_dataframe(sample_datadict):
+    try:
+        output = convert_type(sample_datadict, "DataDict", "DataFrame")
+    except TypeError as e:
+        pytest.fail(f"TypeError encountered for DataDict -> DataFrame: {e}")
+    assert isinstance(output, pd.DataFrame)
+
+
+def test_datadict_to_arrow(sample_datadict):
+    try:
+        output = convert_type(sample_datadict, "DataDict", "ArrowTable")
+    except TypeError as e:
+        pytest.fail(f"TypeError encountered for DataDict -> ArrowTable: {e}")
+    assert isinstance(output, pa.Table)
+
+
+def test_datarecords_to_dataframe(sample_datarecords):
+    try:
+        output = convert_type(sample_datarecords, "DataRecords", "DataFrame")
+    except TypeError as e:
+        pytest.fail(f"TypeError encountered for DataRecords -> DataFrame: {e}")
+    assert isinstance(output, pd.DataFrame)
+
+
+def test_datarecords_to_arrow(sample_datarecords):
+    try:
+        output = convert_type(sample_datarecords, "DataRecords", "ArrowTable")
+    except TypeError as e:
+        pytest.fail(f"TypeError encountered for DataRecords -> ArrowTable: {e}")
+    assert isinstance(output, pa.Table)
