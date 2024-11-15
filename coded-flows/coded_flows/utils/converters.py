@@ -273,7 +273,7 @@ def url_to_base64bytes(value: Union[AnyUrl, MultiHostUrl, str]) -> Base64Bytes:
 
 
 def get_conversion_function(input_type: str, output_type: str) -> Callable:
-    if json_value_types and output_type == "Json":
+    if input_type in json_value_types and output_type == "Json":
         return jsonify
     elif input_type == "DataSeries" and output_type in conversion_mapping["DataSeries"]:
         return dataseries_to_type(output_type)

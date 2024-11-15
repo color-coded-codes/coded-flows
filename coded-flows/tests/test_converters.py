@@ -3,7 +3,7 @@ import json
 import pandas as pd
 import pyarrow as pa
 import numpy as np
-from ..coded_flows.utils import convert_type
+from coded_flows.utils import convert_type
 
 
 json_value_sample_data = {
@@ -45,7 +45,7 @@ def sample_numpy_array():
 
 
 @pytest.fixture
-def arrow_table():
+def sample_arrow_table():
     data = {"col1": [1, 2, 3, 4], "col2": ["a", "b", "c", "d"]}
     table = pa.table(data)
     return table
@@ -56,7 +56,7 @@ def arrow_table():
 # ============== Tests =============
 
 
-@pytest.mark.parametrize("json_type", json_value_sample_data.keys())
+@pytest.mark.parametrize("json_value_type", json_value_sample_data.keys())
 def test_json_values_to_json(json_value_type):
     value = json_value_sample_data[json_value_type]
 
@@ -172,17 +172,49 @@ def test_dataframe_to_arrow(sample_dataframe):
     assert isinstance(output, pa.Table)
 
 
-# DataRecords
-def test_arrow_to_arrow(sample_dataframe):
+def test_arrow_to_datarecords(sample_arrow_table):
     try:
-        output = convert_type(sample_dataframe, "ArrowTable", "NDArray")
+        output = convert_type(sample_arrow_table, "ArrowTable", "DataRecords")
+    except TypeError as e:
+        pytest.fail(f"TypeError encountered for ArrowTable -> DataRecords: {e}")
+    assert isinstance(output, list) and all(isinstance(item, dict) for item in output)
+
+
+def test_arrow_to_list(sample_arrow_table):
+    try:
+        output = convert_type(sample_arrow_table, "ArrowTable", "List")
+    except TypeError as e:
+        pytest.fail(f"TypeError encountered for ArrowTable -> List: {e}")
+    assert isinstance(output, list)
+
+
+def test_arrow_to_dict(sample_arrow_table):
+    try:
+        output = convert_type(sample_arrow_table, "ArrowTable", "Dict")
+    except TypeError as e:
+        pytest.fail(f"TypeError encountered for ArrowTable -> Dict: {e}")
+    assert isinstance(output, dict)
+
+
+def test_arrow_to_json(sample_arrow_table):
+    try:
+        output = convert_type(sample_arrow_table, "ArrowTable", "Json")
+    except TypeError as e:
+        pytest.fail(f"TypeError encountered for ArrowTable -> Json: {e}")
+    assert isinstance(output, str)
+
+
+def test_arrow_to_numpy(sample_arrow_table):
+    try:
+        output = convert_type(sample_arrow_table, "ArrowTable", "NDArray")
     except TypeError as e:
         pytest.fail(f"TypeError encountered for ArrowTable -> NDArray: {e}")
     assert isinstance(output, np.ndarray)
 
 
-# List
-# Dict
-# Json
-# NDArray
-# DataFrame
+def test_arrow_to_dataframe(sample_arrow_table):
+    try:
+        output = convert_type(sample_arrow_table, "ArrowTable", "DataFrame")
+    except TypeError as e:
+        pytest.fail(f"TypeError encountered for ArrowTable -> DataFrame: {e}")
+    assert isinstance(output, pd.DataFrame)
