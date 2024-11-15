@@ -4,7 +4,7 @@ import pytest
 from PIL import Image
 import pyarrow as pa
 from pydantic_core import ValidationError
-from coded_flows.types import (
+from ..coded_flows.types import (
     DataFrame,
     DataSeries,
     NDArray,
