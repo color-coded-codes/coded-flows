@@ -1,10 +1,11 @@
 import base64
 import json
+from decimal import Decimal
 from typing import Any, Callable, Dict, Tuple, Union
 from pydantic_core import MultiHostUrl
 import pandas as pd
 import pyarrow as pa
-from ..types import AnyUrl, Base64Str, Base64Bytes, DataSeries
+from ..types import AnyUrl, Base64Str, Base64Bytes, Datetime, Date, Time
 
 
 url_types = [
@@ -98,25 +99,45 @@ conversion_mapping = {
         "ArrowTable",
     ],
     # Strings
-    "Str": ["Json", "Base64Str", "Base64Bytes"],
+    "Str": ["Json", "Base64Str", "Base64Bytes", "Bytes"],
     "AnyStr": [],
-    "Base64Str": ["Json", "Base64Bytes"],
+    "Base64Str": ["Json", "Base64Bytes", "Bytes"],
     # Country - str too
-    "CountryAlpha2": ["Json", "Base64Str", "Base64Bytes"],  # <-- works as a Helper
-    "CountryAlpha3": ["Json", "Base64Str", "Base64Bytes"],  # <-- works as a Helper
-    "CountryNumericCode": ["Json", "Base64Str", "Base64Bytes"],  # <-- works as a Helper
-    "CountryShortName": ["Json", "Base64Str", "Base64Bytes"],  # <-- works as a Helper
+    "CountryAlpha2": [
+        "Json",
+        "Base64Str",
+        "Base64Bytes",
+        "Bytes",
+    ],  # <-- works as a Helper
+    "CountryAlpha3": [
+        "Json",
+        "Base64Str",
+        "Base64Bytes",
+        "Bytes",
+    ],  # <-- works as a Helper
+    "CountryNumericCode": [
+        "Json",
+        "Base64Str",
+        "Base64Bytes",
+        "Bytes",
+    ],  # <-- works as a Helper
+    "CountryShortName": [
+        "Json",
+        "Base64Str",
+        "Base64Bytes",
+        "Bytes",
+    ],  # <-- works as a Helper
     # Currency - str too
-    "Currency": ["Json", "Base64Str", "Base64Bytes"],
+    "Currency": ["Json", "Base64Str", "Base64Bytes", "Bytes"],
     # MacAddress - str too
-    "MacAddress": ["Json", "Base64Str", "Base64Bytes"],
+    "MacAddress": ["Json", "Base64Str", "Base64Bytes", "Bytes"],
     # Email - str too
-    "EmailStr": ["Json", "Base64Str", "Base64Bytes"],
+    "EmailStr": ["Json", "Base64Str", "Base64Bytes", "Bytes"],
     # Boolean
-    "Bool": ["Json"],
+    "Bool": ["Json", "Int", "Float", "Complex", "Decimal"],
     # Datetime
-    "Datetime": [],  # <-- works as a Helper
-    "Date": [],  # <-- works as a Helper
+    "Datetime": ["Time"],  # <-- works as a Helper
+    "Date": ["Datetime", "Time"],  # <-- works as a Helper
     "Time": [],  # <-- works as a Helper
     "Timedelta": [],  # <-- works as a Helper
     # Numbers
@@ -178,7 +199,7 @@ conversion_mapping = {
     "UUID5": [],
     # Json
     "JsonValue": [],
-    "Json": ["Base64Str", "Base64Bytes"],
+    "Json": ["Base64Str", "Base64Bytes", "Bytes"],
     # Secret
     "SecretStr": [],  # <-- works as a Helper
     # Color
@@ -265,6 +286,17 @@ def datarecords_to_type(output_type: str) -> Callable:
         return lambda x: pa.Table.from_pylist(x)
 
 
+def bool_to_type(output_type: str) -> Callable:
+    if output_type == "Int":
+        return lambda x: int(x)
+    elif output_type == "Float":
+        return lambda x: float(x)
+    elif output_type == "Complex":
+        return lambda x: complex(x)
+    elif output_type == "Decimal":
+        return lambda x: Decimal(x)
+
+
 def jsonify(value: Any) -> str:
     return json.dumps(value, skipkeys=True)
 
@@ -321,6 +353,18 @@ def str_to_base64bytes(value: str) -> Base64Str:
     return base64_bytes
 
 
+def datetime_to_time(value: Datetime) -> Time:
+    return value.time()
+
+
+def date_to_time(value: Date) -> Time:
+    return Time(0, 0, 0)
+
+
+def date_to_datetime(value: Date) -> Datetime:
+    return Datetime.combine(value, Datetime.min.time())
+
+
 def get_conversion_function(input_type: str, output_type: str) -> Callable:
     if input_type in json_value_types and output_type == "Json":
         return jsonify
@@ -354,6 +398,17 @@ def get_conversion_function(input_type: str, output_type: str) -> Callable:
         return base64str_to_base64bytes
     elif input_type == "Base64Bytes" and output_type == "Base64Str":
         return base64bytes_to_base64str
+    elif input_type == "Bool" and output_type in ["Int", "Float", "Complex", "Decimal"]:
+        return bool_to_type(output_type)
+    # Datetime
+    # Date
+    # Time
+    elif input_type == "Datetime" and output_type == "Time":
+        return datetime_to_time
+    elif input_type == "Date" and output_type == "Time":
+        return date_to_time
+    elif input_type == "Date" and output_type == "Datetime":
+        return date_to_datetime
     return None
 
 

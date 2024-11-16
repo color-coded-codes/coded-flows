@@ -1,9 +1,10 @@
 import pytest
-import json
 import pandas as pd
 import pyarrow as pa
 import numpy as np
+from decimal import Decimal
 from coded_flows.utils import convert_type
+from coded_flows.types import Date, Datetime, Time
 
 
 json_value_sample_data = {
@@ -63,6 +64,16 @@ def sample_datarecords():
         {"A": 2, "B": 5, "C": 8},
         {"A": 3, "B": 6, "C": 9},
     ]
+
+
+@pytest.fixture
+def sample_date():
+    return Date(2020, 1, 1)
+
+
+@pytest.fixture
+def sample_datetime():
+    return Datetime(2020, 1, 1, 20, 10, 0, 0)
 
 
 # ==================================
@@ -342,3 +353,39 @@ def test_base64bytes_to_base64str():
     except TypeError as e:
         pytest.fail(f"TypeError encountered for Base64Bytes -> Base64Str: {e}")
     assert isinstance(output, str)
+
+
+def test_bool_to_numeric():
+    num_types = {"Int": int, "Float": float, "Complex": complex, "Decimal": Decimal}
+    value = True
+
+    try:
+        for num_type_name, num_type in num_types.items():
+            output = convert_type(value, "Bool", num_type_name)
+            assert isinstance(output, num_type)
+    except TypeError as e:
+        pytest.fail(f"TypeError encountered for Bool: {e}")
+
+
+def test_datetime_to_time(sample_datetime):
+    try:
+        output = convert_type(sample_datetime, "Datetime", "Time")
+    except TypeError as e:
+        pytest.fail(f"TypeError encountered for Datetime -> Time: {e}")
+    assert isinstance(output, Time)
+
+
+def test_date_to_time(sample_date):
+    try:
+        output = convert_type(sample_date, "Date", "Time")
+    except TypeError as e:
+        pytest.fail(f"TypeError encountered for Date -> Time: {e}")
+    assert isinstance(output, Time)
+
+
+def test_date_to_datetime(sample_date):
+    try:
+        output = convert_type(sample_date, "Date", "Datetime")
+    except TypeError as e:
+        pytest.fail(f"TypeError encountered for Date -> Datetime: {e}")
+    assert isinstance(output, Datetime)

@@ -321,6 +321,7 @@ def types_validation_mapping(main_type=None, is_json=False):
         "Complex": ["Complex", "Int", "Float"],
         "Decimal": ["Decimal", "Int", "PositiveInt", "NegativeInt", "ByteSize"],
         "Number": [
+            "Bool",
             "Int",
             "Float",
             "PositiveInt",
