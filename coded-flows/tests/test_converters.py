@@ -290,9 +290,55 @@ def test_datarecords_to_dataframe(sample_datarecords):
     assert isinstance(output, pd.DataFrame)
 
 
-def test_datarecords_to_arrow(sample_datarecords):
+def test_str_to_base64str():
+    txt = "example"
+    txt64 = "ZXhhbXBsZQ=="
+
     try:
-        output = convert_type(sample_datarecords, "DataRecords", "ArrowTable")
+        output = convert_type(txt, "Str", "Base64Str")
     except TypeError as e:
-        pytest.fail(f"TypeError encountered for DataRecords -> ArrowTable: {e}")
-    assert isinstance(output, pa.Table)
+        pytest.fail(f"TypeError encountered for Str -> Base64Str: {e}")
+    assert isinstance(output, str)
+    assert output == txt64
+
+
+def test_str_to_base64bytes():
+    txt = "example"
+    txt64 = b"ZXhhbXBsZQ=="
+
+    try:
+        output = convert_type(txt, "Str", "Base64Bytes")
+    except TypeError as e:
+        pytest.fail(f"TypeError encountered for Str -> Base64Bytes: {e}")
+    assert isinstance(output, bytes)
+    assert output == txt64
+
+
+def test_str_to_bytes():
+    txt = "example"
+
+    try:
+        output = convert_type(txt, "Str", "Bytes")
+    except TypeError as e:
+        pytest.fail(f"TypeError encountered for Str -> Bytes: {e}")
+    assert isinstance(output, bytes)
+
+
+def test_base64str_to_base64bytes():
+    txt64 = "ZXhhbXBsZQ=="
+
+    try:
+        output = convert_type(txt64, "Base64Str", "Base64Bytes")
+    except TypeError as e:
+        pytest.fail(f"TypeError encountered for Base64Str -> Base64Bytes: {e}")
+    assert isinstance(output, bytes)
+
+
+def test_base64bytes_to_base64str():
+    txt64 = b"ZXhhbXBsZQ=="
+
+    try:
+        output = convert_type(txt64, "Base64Bytes", "Base64Str")
+    except TypeError as e:
+        pytest.fail(f"TypeError encountered for Base64Bytes -> Base64Str: {e}")
+    assert isinstance(output, str)

@@ -56,6 +56,7 @@ string_types = [
     "MacAddress",
 ]
 
+
 conversion_mapping = {
     "Any": [],
     "Null": ["Json"],
@@ -97,16 +98,20 @@ conversion_mapping = {
         "ArrowTable",
     ],
     # Strings
-    "Str": ["Json"],
+    "Str": ["Json", "Base64Str", "Base64Bytes"],
     "AnyStr": [],
-    "Base64Str": ["Json"],
+    "Base64Str": ["Json", "Base64Bytes"],
     # Country - str too
-    "CountryAlpha2": ["Json"],  # <-- works as a Helper
-    "CountryAlpha3": ["Json"],  # <-- works as a Helper
-    "CountryNumericCode": ["Json"],  # <-- works as a Helper
-    "CountryShortName": ["Json"],  # <-- works as a Helper
+    "CountryAlpha2": ["Json", "Base64Str", "Base64Bytes"],  # <-- works as a Helper
+    "CountryAlpha3": ["Json", "Base64Str", "Base64Bytes"],  # <-- works as a Helper
+    "CountryNumericCode": ["Json", "Base64Str", "Base64Bytes"],  # <-- works as a Helper
+    "CountryShortName": ["Json", "Base64Str", "Base64Bytes"],  # <-- works as a Helper
     # Currency - str too
-    "Currency": ["Json"],
+    "Currency": ["Json", "Base64Str", "Base64Bytes"],
+    # MacAddress - str too
+    "MacAddress": ["Json", "Base64Str", "Base64Bytes"],
+    # Email - str too
+    "EmailStr": ["Json", "Base64Str", "Base64Bytes"],
     # Boolean
     "Bool": ["Json"],
     # Datetime
@@ -155,14 +160,10 @@ conversion_mapping = {
     "NatsDsn": [],  # <-- works as a Helper
     "MySQLDsn": [],  # <-- works as a Helper
     "MariaDBDsn": [],  # <-- works as a Helper
-    # MacAddress - str too
-    "MacAddress": ["Json"],
-    # Email - str too
-    "EmailStr": ["Json"],
     # bytes
     "Bytes": [],
     "Bytearray": [],
-    "Base64Bytes": [],
+    "Base64Bytes": ["Base64Str"],
     "BytesIOType": [],
     # Paths
     "Path": [],  # <-- works as a Helper
@@ -177,7 +178,7 @@ conversion_mapping = {
     "UUID5": [],
     # Json
     "JsonValue": [],
-    "Json": [],
+    "Json": ["Base64Str", "Base64Bytes"],
     # Secret
     "SecretStr": [],  # <-- works as a Helper
     # Color
@@ -307,6 +308,19 @@ def url_to_base64bytes(value: Union[AnyUrl, MultiHostUrl, str]) -> Base64Bytes:
     return base64_bytes
 
 
+def str_to_base64str(value: str) -> Base64Str:
+    value_bytes = value.encode("utf-8")
+    base64_bytes = base64.b64encode(value_bytes)
+    base64_string = base64_bytes.decode("utf-8")
+    return base64_string
+
+
+def str_to_base64bytes(value: str) -> Base64Str:
+    value_bytes = value.encode("utf-8")
+    base64_bytes = base64.b64encode(value_bytes)
+    return base64_bytes
+
+
 def get_conversion_function(input_type: str, output_type: str) -> Callable:
     if input_type in json_value_types and output_type == "Json":
         return jsonify
@@ -324,6 +338,22 @@ def get_conversion_function(input_type: str, output_type: str) -> Callable:
         input_type == "DataRecords" and output_type in conversion_mapping["DataRecords"]
     ):
         return datarecords_to_type(output_type)
+    elif (
+        input_type in [t for t in string_types if t != "Base64Str"]
+        and output_type == "Base64Str"
+    ):
+        return str_to_base64str
+    elif input_type in string_types and output_type == "Bytes":
+        return str_to_bytes
+    elif (
+        input_type in [t for t in string_types if t != "Base64Str"]
+        and output_type == "Base64Bytes"
+    ):
+        return str_to_base64bytes
+    elif input_type == "Base64Str" and output_type == "Base64Bytes":
+        return base64str_to_base64bytes
+    elif input_type == "Base64Bytes" and output_type == "Base64Str":
+        return base64bytes_to_base64str
     return None
 
 
