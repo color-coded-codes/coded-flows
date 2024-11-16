@@ -221,11 +221,11 @@ conversion_mapping = {
     # Secret
     "SecretStr": [],  # <-- works as a Helper
     # Color
-    "Color": [],  # <-- works as a Helper
+    "Color": ["Str", "AnyStr"],  # <-- works as a Helper
     # Coordinates
     "Longitude": [],
     "Latitude": [],
-    "Coordinate": [],  # <-- works as a Helper
+    "Coordinate": ["Tuple", "List"],  # <-- works as a Helper
     # Media
     "PILImage": [],
     "MediaData": [],
@@ -370,6 +370,13 @@ def frozenset_to_type(output_type: str) -> Callable:
         return lambda x: list(x)
 
 
+def coordinate_to_type(output_type: str) -> Callable:
+    if output_type == "Tuple":
+        return lambda x: (x.latitude, x.longitude)
+    elif output_type == "List":
+        return lambda x: [x.latitude, x.longitude]
+
+
 def jsonify(value: Any) -> str:
     return json.dumps(value, skipkeys=True)
 
@@ -495,6 +502,10 @@ def get_conversion_function(input_type: str, output_type: str) -> Callable:
         return frozenset_to_type(output_type)
     elif input_type in url_types and output_type in core_string_types:
         return url_to_str
+    elif input_type == "Color" and output_type in core_string_types:
+        return lambda x: x.as_hex()
+    elif input_type == "Coordinate" and output_type in ["Tuple", "List"]:
+        return coordinate_to_type(output_type)
     return None
 
 

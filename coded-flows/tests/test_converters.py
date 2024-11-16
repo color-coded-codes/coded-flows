@@ -18,6 +18,8 @@ from coded_flows.types import (
     NewPath,
     FilePath,
     DirectoryPath,
+    Color,
+    Coordinate,
 )
 
 
@@ -98,6 +100,11 @@ def sample_url():
 @pytest.fixture
 def sample_postgres_dsn():
     return PostgresDsn("postgres://username:password@hostname:4000/database_name")
+
+
+@pytest.fixture
+def sample_coordinate():
+    return Coordinate(41.40338, 2.17403)
 
 
 # ==================================
@@ -521,3 +528,30 @@ def test_dsn_to_str(sample_postgres_dsn):
     except TypeError as e:
         pytest.fail(f"TypeError encountered for PostgresDsn -> Str: {e}")
     assert isinstance(output, str)
+
+
+def test_color_to_str():
+    value = Color((250, 0, 0))
+    try:
+        output = convert_type(value, "Color", "Str")
+    except TypeError as e:
+        pytest.fail(f"TypeError encountered for Color -> Str: {e}")
+    assert isinstance(output, str)
+
+
+def test_coordinate_to_list(sample_coordinate):
+    try:
+        output = convert_type(sample_coordinate, "Coordinate", "List")
+    except TypeError as e:
+        pytest.fail(f"TypeError encountered for Coordinate -> List: {e}")
+    assert isinstance(output, list)
+    assert len(output) == 2
+
+
+def test_coordinate_to_tuple(sample_coordinate):
+    try:
+        output = convert_type(sample_coordinate, "Coordinate", "Tuple")
+    except TypeError as e:
+        pytest.fail(f"TypeError encountered for Coordinate -> Tuple: {e}")
+    assert isinstance(output, tuple)
+    assert len(output) == 2
