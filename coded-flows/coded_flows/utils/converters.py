@@ -58,7 +58,7 @@ string_types = [
     "MacAddress",
 ]
 
-numeric_to_str_types = [
+to_str_types = [
     "Int",
     "Float",
     "Decimal",
@@ -67,6 +67,13 @@ numeric_to_str_types = [
     "PositiveFloat",
     "NegativeFloat",
     "FiniteFloat",
+    "IPvAnyAddress",
+    "IPvAnyInterface",
+    "IPvAnyNetwork",
+    "Path",
+    "NewPath",
+    "FilePath",
+    "DirectoryPath",
 ]
 
 
@@ -175,33 +182,33 @@ conversion_mapping = {
     # Callable
     "Callable": [],
     # IP Address types
-    "IPvAnyAddress": [],  # <-- works as a Helper
-    "IPvAnyInterface": [],  # <-- works as a Helper
-    "IPvAnyNetwork": [],  # <-- works as a Helper
+    "IPvAnyAddress": ["Str", "AnyStr"],  # <-- works as a Helper
+    "IPvAnyInterface": ["Str", "AnyStr"],  # <-- works as a Helper
+    "IPvAnyNetwork": ["Str", "AnyStr"],  # <-- works as a Helper
     # network types
-    "AnyUrl": [],  # <-- works as a Helper
-    "AnyHttpUrl": [],  # <-- works as a Helper
-    "HttpUrl": [],  # <-- works as a Helper
-    "FileUrl": [],  # <-- works as a Helper
-    "PostgresDsn": [],  # <-- works as a Helper
-    "CockroachDsn": [],  # <-- works as a Helper
-    "AmqpDsn": [],  # <-- works as a Helper
-    "RedisDsn": [],  # <-- works as a Helper
-    "MongoDsn": [],  # <-- works as a Helper
-    "KafkaDsn": [],  # <-- works as a Helper
-    "NatsDsn": [],  # <-- works as a Helper
-    "MySQLDsn": [],  # <-- works as a Helper
-    "MariaDBDsn": [],  # <-- works as a Helper
+    "AnyUrl": ["Str", "AnyStr"],  # <-- works as a Helper
+    "AnyHttpUrl": ["Str", "AnyStr"],  # <-- works as a Helper
+    "HttpUrl": ["Str", "AnyStr"],  # <-- works as a Helper
+    "FileUrl": ["Str", "AnyStr"],  # <-- works as a Helper
+    "PostgresDsn": ["Str", "AnyStr"],  # <-- works as a Helper
+    "CockroachDsn": ["Str", "AnyStr"],  # <-- works as a Helper
+    "AmqpDsn": ["Str", "AnyStr"],  # <-- works as a Helper
+    "RedisDsn": ["Str", "AnyStr"],  # <-- works as a Helper
+    "MongoDsn": ["Str", "AnyStr"],  # <-- works as a Helper
+    "KafkaDsn": ["Str", "AnyStr"],  # <-- works as a Helper
+    "NatsDsn": ["Str", "AnyStr"],  # <-- works as a Helper
+    "MySQLDsn": ["Str", "AnyStr"],  # <-- works as a Helper
+    "MariaDBDsn": ["Str", "AnyStr"],  # <-- works as a Helper
     # bytes
     "Bytes": [],
     "Bytearray": [],
     "Base64Bytes": ["Base64Str"],
     "BytesIOType": [],
     # Paths
-    "Path": [],  # <-- works as a Helper
-    "NewPath": [],  # <-- works as a Helper
-    "FilePath": [],  # <-- works as a Helper
-    "DirectoryPath": [],  # <-- works as a Helper
+    "Path": ["Str", "AnyStr"],  # <-- works as a Helper
+    "NewPath": ["Str", "AnyStr"],  # <-- works as a Helper
+    "FilePath": ["Str", "AnyStr"],  # <-- works as a Helper
+    "DirectoryPath": ["Str", "AnyStr"],  # <-- works as a Helper
     # UUID
     "UUID": [],
     "UUID1": [],
@@ -472,7 +479,7 @@ def get_conversion_function(input_type: str, output_type: str) -> Callable:
         return date_to_time
     elif input_type == "Date" and output_type == "Datetime":
         return date_to_datetime
-    elif input_type in numeric_to_str_types and output_type in core_string_types:
+    elif input_type in to_str_types and output_type in core_string_types:
         return str
     elif input_type == "List" and output_type in [
         t for t in conversion_mapping["List"] if t != "Json"
@@ -486,6 +493,8 @@ def get_conversion_function(input_type: str, output_type: str) -> Callable:
         return set_to_type(output_type)
     elif input_type == "FrozenSet" and output_type in conversion_mapping["FrozenSet"]:
         return frozenset_to_type(output_type)
+    elif input_type in url_types and output_type in core_string_types:
+        return url_to_str
     return None
 
 

@@ -5,7 +5,20 @@ import numpy as np
 from collections import deque
 from decimal import Decimal
 from coded_flows.utils import convert_type
-from coded_flows.types import Date, Datetime, Time
+from coded_flows.types import (
+    Date,
+    Datetime,
+    Time,
+    IPvAnyAddress,
+    IPvAnyInterface,
+    IPvAnyNetwork,
+    AnyUrl,
+    PostgresDsn,
+    Path,
+    NewPath,
+    FilePath,
+    DirectoryPath,
+)
 
 
 json_value_sample_data = {
@@ -75,6 +88,16 @@ def sample_date():
 @pytest.fixture
 def sample_datetime():
     return Datetime(2020, 1, 1, 20, 10, 0, 0)
+
+
+@pytest.fixture
+def sample_url():
+    return AnyUrl("https://www.example.com/path/to/resource?query=param#fragment")
+
+
+@pytest.fixture
+def sample_postgres_dsn():
+    return PostgresDsn("postgres://username:password@hostname:4000/database_name")
 
 
 # ==================================
@@ -392,8 +415,19 @@ def test_date_to_datetime(sample_date):
     assert isinstance(output, Datetime)
 
 
-def test_numeric_to_str():
-    num_types = {"Int": 4, "Float": 3.14, "Decimal": Decimal(2.9)}
+def test_to_str():
+    num_types = {
+        "Int": 4,
+        "Float": 3.14,
+        "Decimal": Decimal(2.9),
+        "IPvAnyAddress": IPvAnyAddress("192.168.1.1"),
+        "IPvAnyInterface": IPvAnyInterface("192.168.1.1/24"),
+        "IPvAnyNetwork": IPvAnyNetwork("192.168.1.1/32"),
+        "Path": Path("/home/user/file.txt"),
+        "NewPath": NewPath("/home/user/file.txt"),
+        "FilePath": FilePath("/home/user/file.txt"),
+        "DirectoryPath": DirectoryPath("/home/user/"),
+    }
 
     try:
         for num_type_name, value in num_types.items():
@@ -471,3 +505,19 @@ def test_frozenset_to_types():
             assert isinstance(output, output_type)
     except TypeError as e:
         pytest.fail(f"TypeError encountered for FrozenSet: {e}")
+
+
+def test_url_to_str(sample_url):
+    try:
+        output = convert_type(sample_url, "AnyUrl", "Str")
+    except TypeError as e:
+        pytest.fail(f"TypeError encountered for AnyUrl -> Str: {e}")
+    assert isinstance(output, str)
+
+
+def test_dsn_to_str(sample_postgres_dsn):
+    try:
+        output = convert_type(sample_postgres_dsn, "PostgresDsn", "Str")
+    except TypeError as e:
+        pytest.fail(f"TypeError encountered for PostgresDsn -> Str: {e}")
+    assert isinstance(output, str)
