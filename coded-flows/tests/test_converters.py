@@ -4,6 +4,7 @@ import pyarrow as pa
 import numpy as np
 from collections import deque
 from decimal import Decimal
+from PIL import Image, ImageDraw, ImageFont
 from coded_flows.utils import convert_type
 from coded_flows.types import (
     Date,
@@ -105,6 +106,19 @@ def sample_postgres_dsn():
 @pytest.fixture
 def sample_coordinate():
     return Coordinate(41.40338, 2.17403)
+
+
+@pytest.fixture
+def sample_image():
+    image = Image.new("RGB", (300, 300), color="white")
+
+    draw = ImageDraw.Draw(image)
+
+    draw.rectangle([50, 50, 250, 250], outline="black", width=3)
+    draw.ellipse([75, 75, 225, 225], outline="blue", width=3)
+    draw.text((100, 130), "Hello, Pillow!", fill="black")
+
+    return image
 
 
 # ==================================
@@ -555,3 +569,27 @@ def test_coordinate_to_tuple(sample_coordinate):
         pytest.fail(f"TypeError encountered for Coordinate -> Tuple: {e}")
     assert isinstance(output, tuple)
     assert len(output) == 2
+
+
+def test_image_to_numpy(sample_image):
+    try:
+        output = convert_type(sample_image, "PILImage", "NDArray")
+    except TypeError as e:
+        pytest.fail(f"TypeError encountered for PILImage -> NDArray: {e}")
+    assert isinstance(output, np.ndarray)
+
+
+def test_image_to_bytes(sample_image):
+    try:
+        output = convert_type(sample_image, "PILImage", "Bytes")
+    except TypeError as e:
+        pytest.fail(f"TypeError encountered for PILImage -> Bytes: {e}")
+    assert isinstance(output, bytes)
+
+
+def test_image_to_str(sample_image):
+    try:
+        output = convert_type(sample_image, "PILImage", "Str")
+    except TypeError as e:
+        pytest.fail(f"TypeError encountered for PILImage -> Str: {e}")
+    assert isinstance(output, str)

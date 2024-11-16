@@ -1,12 +1,23 @@
 import base64
 import json
+import numpy as np
+from io import BytesIO
 from decimal import Decimal
 from collections import deque
 from typing import Any, Callable, Dict, Tuple, Union
 from pydantic_core import MultiHostUrl
 import pandas as pd
 import pyarrow as pa
-from ..types import AnyUrl, Base64Str, Base64Bytes, Datetime, Date, Time
+from ..types import (
+    AnyUrl,
+    Base64Str,
+    Base64Bytes,
+    Datetime,
+    Date,
+    Time,
+    PILImage,
+    NDArray,
+)
 
 
 url_types = [
@@ -227,7 +238,14 @@ conversion_mapping = {
     "Latitude": [],
     "Coordinate": ["Tuple", "List"],  # <-- works as a Helper
     # Media
-    "PILImage": [],
+    "PILImage": [
+        "NDArray",
+        "Bytes",
+        "Base64Str",
+        "Str",
+        "AnyStr",
+        "MediaData",
+    ],
     "MediaData": [],
 }
 
@@ -445,6 +463,23 @@ def date_to_datetime(value: Date) -> Datetime:
     return Datetime.combine(value, Datetime.min.time())
 
 
+def image_to_numpy(image: PILImage) -> NDArray:
+    return np.array(image)
+
+
+def image_to_bytes(image: PILImage) -> bytes:
+    byte_io = BytesIO()
+    image.save(byte_io, format=image.format if image.format else "PNG")
+    image_bytes = byte_io.getvalue()
+    byte_io.close()
+    return image_bytes
+
+
+def image_to_base64str(image: PILImage) -> Base64Str:
+    image_bytes = image_to_bytes(image)
+    return base64.b64encode(image_bytes).decode("utf-8")
+
+
 def get_conversion_function(input_type: str, output_type: str) -> Callable:
     if input_type in json_value_types and output_type == "Json":
         return jsonify
@@ -506,6 +541,16 @@ def get_conversion_function(input_type: str, output_type: str) -> Callable:
         return lambda x: x.as_hex()
     elif input_type == "Coordinate" and output_type in ["Tuple", "List"]:
         return coordinate_to_type(output_type)
+    elif input_type == "PILImage" and output_type in ["NDArray", "MediaData"]:
+        return image_to_numpy
+    elif input_type == "PILImage" and output_type == "Bytes":
+        return image_to_bytes
+    elif input_type == "PILImage" and output_type in [
+        "Base64Str",
+        "Str",
+        "AnyStr",
+    ]:
+        return image_to_base64str
     return None
 
 
