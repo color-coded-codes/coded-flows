@@ -1,6 +1,7 @@
 import base64
 import json
 from decimal import Decimal
+from collections import deque
 from typing import Any, Callable, Dict, Tuple, Union
 from pydantic_core import MultiHostUrl
 import pandas as pd
@@ -55,6 +56,17 @@ string_types = [
     "Currency",
     "Json",
     "MacAddress",
+]
+
+numeric_to_str_types = [
+    "Int",
+    "Float",
+    "Decimal",
+    "PositiveInt",
+    "NegativeInt",
+    "PositiveFloat",
+    "NegativeFloat",
+    "FiniteFloat",
 ]
 
 
@@ -141,23 +153,22 @@ conversion_mapping = {
     "Time": [],  # <-- works as a Helper
     "Timedelta": [],  # <-- works as a Helper
     # Numbers
-    "Int": ["Json"],
-    "Float": ["Json"],
+    "Int": ["Json", "Str", "AnyStr"],
+    "Float": ["Json", "Str", "AnyStr"],
     "Complex": [],
-    "Decimal": [],
+    "Decimal": ["Str", "AnyStr"],
     "Number": [],
-    "PositiveInt": [],
-    "NegativeInt": [],
-    "PositiveFloat": [],
-    "NegativeFloat": [],
-    "FiniteFloat": [],
-    "ByteSize": [],  # <-- works as a Helper
+    "PositiveInt": ["Str", "AnyStr"],
+    "NegativeInt": ["Str", "AnyStr"],
+    "PositiveFloat": ["Str", "AnyStr"],
+    "NegativeFloat": ["Str", "AnyStr"],
+    "FiniteFloat": ["Str", "AnyStr"],
     # Iterables
-    "List": ["Json"],
-    "Tuple": [],
-    "Deque": [],
-    "Set": [],
-    "FrozenSet": [],
+    "List": ["Json", "Tuple", "Deque", "Set", "FrozenSet"],
+    "Tuple": ["List", "Deque", "Set", "FrozenSet"],
+    "Deque": ["Tuple", "List", "Set", "FrozenSet"],
+    "Set": ["Tuple", "Deque", "List", "FrozenSet"],
+    "FrozenSet": ["Tuple", "Deque", "Set", "List"],
     "Iterable": [],
     # Mapping
     "Dict": ["Json"],
@@ -297,6 +308,61 @@ def bool_to_type(output_type: str) -> Callable:
         return lambda x: Decimal(x)
 
 
+def list_to_type(output_type: str) -> Callable:
+    if output_type == "Tuple":
+        return lambda x: tuple(x)
+    elif output_type == "Deque":
+        return lambda x: deque(x)
+    elif output_type == "Set":
+        return lambda x: set(x)
+    elif output_type == "FrozenSet":
+        return lambda x: frozenset(x)
+
+
+def tuple_to_type(output_type: str) -> Callable:
+    if output_type == "List":
+        return lambda x: list(x)
+    elif output_type == "Deque":
+        return lambda x: deque(x)
+    elif output_type == "Set":
+        return lambda x: set(x)
+    elif output_type == "FrozenSet":
+        return lambda x: frozenset(x)
+
+
+def deque_to_type(output_type: str) -> Callable:
+    if output_type == "Tuple":
+        return lambda x: tuple(x)
+    elif output_type == "List":
+        return lambda x: list(x)
+    elif output_type == "Set":
+        return lambda x: set(x)
+    elif output_type == "FrozenSet":
+        return lambda x: frozenset(x)
+
+
+def set_to_type(output_type: str) -> Callable:
+    if output_type == "Tuple":
+        return lambda x: tuple(x)
+    elif output_type == "Deque":
+        return lambda x: deque(x)
+    elif output_type == "List":
+        return lambda x: list(x)
+    elif output_type == "FrozenSet":
+        return lambda x: frozenset(x)
+
+
+def frozenset_to_type(output_type: str) -> Callable:
+    if output_type == "Tuple":
+        return lambda x: tuple(x)
+    elif output_type == "Deque":
+        return lambda x: deque(x)
+    elif output_type == "Set":
+        return lambda x: set(x)
+    elif output_type == "List":
+        return lambda x: list(x)
+
+
 def jsonify(value: Any) -> str:
     return json.dumps(value, skipkeys=True)
 
@@ -400,15 +466,26 @@ def get_conversion_function(input_type: str, output_type: str) -> Callable:
         return base64bytes_to_base64str
     elif input_type == "Bool" and output_type in ["Int", "Float", "Complex", "Decimal"]:
         return bool_to_type(output_type)
-    # Datetime
-    # Date
-    # Time
     elif input_type == "Datetime" and output_type == "Time":
         return datetime_to_time
     elif input_type == "Date" and output_type == "Time":
         return date_to_time
     elif input_type == "Date" and output_type == "Datetime":
         return date_to_datetime
+    elif input_type in numeric_to_str_types and output_type in core_string_types:
+        return str
+    elif input_type == "List" and output_type in [
+        t for t in conversion_mapping["List"] if t != "Json"
+    ]:
+        return list_to_type(output_type)
+    elif input_type == "Tuple" and output_type in conversion_mapping["Tuple"]:
+        return tuple_to_type(output_type)
+    elif input_type == "Deque" and output_type in conversion_mapping["Deque"]:
+        return deque_to_type(output_type)
+    elif input_type == "Set" and output_type in conversion_mapping["Set"]:
+        return set_to_type(output_type)
+    elif input_type == "FrozenSet" and output_type in conversion_mapping["FrozenSet"]:
+        return frozenset_to_type(output_type)
     return None
 
 

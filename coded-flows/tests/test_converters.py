@@ -2,6 +2,7 @@ import pytest
 import pandas as pd
 import pyarrow as pa
 import numpy as np
+from collections import deque
 from decimal import Decimal
 from coded_flows.utils import convert_type
 from coded_flows.types import Date, Datetime, Time
@@ -389,3 +390,84 @@ def test_date_to_datetime(sample_date):
     except TypeError as e:
         pytest.fail(f"TypeError encountered for Date -> Datetime: {e}")
     assert isinstance(output, Datetime)
+
+
+def test_numeric_to_str():
+    num_types = {"Int": 4, "Float": 3.14, "Decimal": Decimal(2.9)}
+
+    try:
+        for num_type_name, value in num_types.items():
+            output = convert_type(value, num_type_name, "Str")
+            assert isinstance(output, str)
+    except TypeError as e:
+        pytest.fail(f"TypeError encountered for Numeric -> Str: {e}")
+
+
+def test_list_to_types():
+    output_types = {"Tuple": tuple, "Deque": deque, "Set": set, "FrozenSet": frozenset}
+    value = [1, "56", 7, 2j]
+
+    try:
+        for output_type_name, output_type in output_types.items():
+            output = convert_type(value, "List", output_type_name)
+            assert isinstance(output, output_type)
+    except TypeError as e:
+        pytest.fail(f"TypeError encountered for List: {e}")
+
+
+def test_tuple_to_types():
+    output_types = {"List": list, "Deque": deque, "Set": set, "FrozenSet": frozenset}
+    value = (1, "56", 7, 2j)
+
+    try:
+        for output_type_name, output_type in output_types.items():
+            output = convert_type(value, "Tuple", output_type_name)
+            assert isinstance(output, output_type)
+    except TypeError as e:
+        pytest.fail(f"TypeError encountered for Tuple: {e}")
+
+
+def test_deque_to_types():
+    output_types = {"List": list, "Tuple": tuple, "Set": set, "FrozenSet": frozenset}
+    value = deque([1, "56", 7, 2j])
+
+    try:
+        for output_type_name, output_type in output_types.items():
+            output = convert_type(value, "Deque", output_type_name)
+            assert isinstance(output, output_type)
+    except TypeError as e:
+        pytest.fail(f"TypeError encountered for Deque: {e}")
+
+
+def test_set_to_types():
+    output_types = {
+        "List": list,
+        "Tuple": tuple,
+        "Deque": deque,
+        "FrozenSet": frozenset,
+    }
+    value = {1, "56", 7, 2j}
+
+    try:
+        for output_type_name, output_type in output_types.items():
+            output = convert_type(value, "Set", output_type_name)
+            assert isinstance(output, output_type)
+    except TypeError as e:
+        pytest.fail(f"TypeError encountered for Set: {e}")
+
+
+def test_frozenset_to_types():
+    output_types = {
+        "List": list,
+        "Tuple": tuple,
+        "Deque": deque,
+        "Set": set,
+    }
+    value = frozenset([1, "56", 7, 2j])
+
+    try:
+        for output_type_name, output_type in output_types.items():
+            output = convert_type(value, "FrozenSet", output_type_name)
+            assert isinstance(output, output_type)
+    except TypeError as e:
+        pytest.fail(f"TypeError encountered for FrozenSet: {e}")
