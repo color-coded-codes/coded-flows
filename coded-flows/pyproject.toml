@@ -1,6 +1,6 @@
 [tool.poetry]
 name = "coded-flows"
-version = "0.2.3"
+version = "0.3.0"
 description = "Various utilities for Coded Flows"
 authors = ["COLOR CODED CODES <contact@colorcoded.codes>"]
 readme = "README.md"
@@ -11,7 +11,7 @@ pandas = "^2.1.0"
 pyarrow = "^16.0.0"
 pydantic = {version = "^2.6.4", extras = ["email"]}
 email-validator = "^2.0.0"
-pycountry = "^22.3.5"
+pycountry = "^24.6.1"
 pillow = "^10.1.0"
 pydantic-extra-types = "^2.6.0"
 
