@@ -7,7 +7,7 @@ from PIL import Image
 
 
 def save_image_to_temp(image):
-    random_filename = f"{uuid.uuid4().hex}.png"
+    random_filename = f"cfimg_{uuid.uuid4().hex}.png"
     temp_dir = tempfile.gettempdir()
     file_path = os.path.join(temp_dir, random_filename)
 
