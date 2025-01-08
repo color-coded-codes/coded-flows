@@ -38,17 +38,48 @@ def save_image_to_temp(image):
     return file_path
 
 
+def _save_df_to_json(df: pd.DataFrame) -> str:
+    random_filename = f"cfdata_{uuid.uuid4().hex}.json"
+    temp_dir = os.path.join(tempfile.gettempdir(), "coded-flows-media")
+    os.makedirs(temp_dir, exist_ok=True)
+    file_path = os.path.join(temp_dir, random_filename)
+    df.to_json(file_path, orient="records", lines=False, indent=None)
+    return file_path
+
+
 # List, DataSeries, NDArray, DataRecords, DataFrame
 def save_data_to_temp(
     *data_args: Union[
         pd.DataFrame, pd.Series, np.ndarray, List[Dict[str, Any]], List[Any]
     ],
-    labels: List[str],
+    labels: List[str] = [],
+    is_table=False,
 ) -> str:
-    if len(data_args) != len(labels):
+    labels = ["values"] if is_table else labels
+
+    if not is_table and len(data_args) != len(labels):
         raise ValueError(
             "The number of data arguments must match the number of labels."
         )
+    elif is_table and len(data_args) != 1:
+        raise ValueError("The number of data arguments for a table must equal to 1.")
+
+    if is_table:
+        data = data_args[0]
+
+    if is_table and (
+        isinstance(data, pd.DataFrame)
+        or (
+            isinstance(data, list) and all(isinstance(item, dict) for item in data[:50])
+        )
+    ):
+        table_df = None
+        if isinstance(data, pd.DataFrame):
+            table_df = data
+        else:
+            table_df = pd.DataFrame.from_records(data)
+
+        return _save_df_to_json(table_df)
 
     normalized_data = []
     max_length = 0
@@ -66,7 +97,9 @@ def save_data_to_temp(
                     f"NumPy array for label '{label}' must be one-dimensional."
                 )
             col_data = data
-        elif isinstance(data, list) and all(isinstance(item, dict) for item in data):
+        elif isinstance(data, list) and all(
+            isinstance(item, dict) for item in data[:50]
+        ):
             col_data = [item.get(label, None) for item in data]
         elif isinstance(data, list):
             col_data = data
@@ -79,13 +112,6 @@ def save_data_to_temp(
         max_length = max(max_length, len(col_data))
 
     combined_df = pd.concat(normalized_data, axis=1)
-
     combined_df = combined_df.reindex(range(max_length)).reset_index(drop=True)
 
-    random_filename = f"cfdata_{uuid.uuid4().hex}.json"
-    temp_dir = os.path.join(tempfile.gettempdir(), "coded-flows-media")
-    os.makedirs(temp_dir, exist_ok=True)
-    file_path = os.path.join(temp_dir, random_filename)
-    combined_df.to_json(file_path, orient="records", lines=False, indent=None)
-
-    return file_path
+    return _save_df_to_json(combined_df)
