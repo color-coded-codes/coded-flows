@@ -97,3 +97,102 @@ def test_series_input():
         json_content.strip() == expected_content
     ), "JSON content mismatch for Series inputs."
     os.remove(file_path)
+
+
+def test_save_data_to_temp_is_table_true_with_dataframe():
+    # Create a sample DataFrame
+    df = pd.DataFrame({"col1": [1, 2, 3], "col2": ["a", "b", "c"]})
+
+    # Call the function with `is_table=True`
+    json_path = save_data_to_temp(df, is_table=True)
+
+    # Assert the file exists
+    assert os.path.exists(json_path), "JSON file was not created."
+
+    # Assert the file content matches the DataFrame content
+    with open(json_path, "r") as f:
+        saved_data = pd.read_json(f, orient="records")
+        pd.testing.assert_frame_equal(saved_data, df)
+
+    # Clean up
+    os.remove(json_path)
+
+
+def test_save_data_to_temp_is_table_true_with_list_of_records():
+    # Create a sample list of records
+    records = [
+        {"col1": 1, "col2": "a"},
+        {"col1": 2, "col2": "b"},
+        {"col1": 3, "col2": "c"},
+    ]
+
+    # Call the function with `is_table=True`
+    json_path = save_data_to_temp(records, is_table=True)
+
+    # Assert the file exists
+    assert os.path.exists(json_path), "JSON file was not created."
+
+    # Assert the file content matches the list of records
+    with open(json_path, "r") as f:
+        saved_data = pd.read_json(f, orient="records")
+        expected_df = pd.DataFrame.from_records(records)
+        pd.testing.assert_frame_equal(saved_data, expected_df)
+
+    # Clean up
+    os.remove(json_path)
+
+
+def test_save_data_to_temp_is_table_true_numpy_array():
+    # NumPy array input
+    data = np.array([1, 2, 3, 4, 5, 6])
+    json_path = save_data_to_temp(data, is_table=True)
+    assert os.path.exists(json_path)
+    with open(json_path, "r") as f:
+        saved_data = pd.read_json(f, orient="records")
+        expected_df = pd.DataFrame(data, columns=["values"])
+        pd.testing.assert_frame_equal(saved_data, expected_df)
+
+    # Clean up
+    os.remove(json_path)
+
+
+def test_save_data_to_temp_is_table_true_list():
+    # List input
+    data = [1, 2, 3, 4, 5, 6]
+    json_path = save_data_to_temp(data, is_table=True)
+    assert os.path.exists(json_path)
+    with open(json_path, "r") as f:
+        saved_data = pd.read_json(f, orient="records")
+        expected_df = pd.DataFrame(data, columns=["values"])
+        pd.testing.assert_frame_equal(saved_data, expected_df)
+
+    # Clean up
+    os.remove(json_path)
+
+
+def test_save_data_to_temp_is_table_true_tuple():
+    # Tuple input
+    data = (1, 2, 3, 4, 5, 6)
+    json_path = save_data_to_temp(data, is_table=True)
+    assert os.path.exists(json_path)
+    with open(json_path, "r") as f:
+        saved_data = pd.read_json(f, orient="records")
+        expected_df = pd.DataFrame(data, columns=["values"])
+        pd.testing.assert_frame_equal(saved_data, expected_df)
+
+    # Clean up
+    os.remove(json_path)
+
+
+def test_save_data_to_temp_is_table_true_series():
+    # Series input
+    series = pd.Series([1, 2, 3], name="col1")
+    json_path = save_data_to_temp(series, is_table=True)
+    assert os.path.exists(json_path)
+    with open(json_path, "r") as f:
+        saved_data = pd.read_json(f, orient="records")
+        expected_df = pd.DataFrame({"values": series})
+        pd.testing.assert_frame_equal(saved_data, expected_df)
+
+    # Clean up
+    os.remove(json_path)
