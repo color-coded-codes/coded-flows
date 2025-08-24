@@ -147,27 +147,29 @@ def save_data_to_parquet(
     filename=None,
 ) -> str:
 
+    random_filename = f"cfdata_{filename if filename else uuid.uuid4().hex}.parquet"
+    temp_dir = os.path.join(tempfile.gettempdir(), "coded-flows-media")
+    os.makedirs(temp_dir, exist_ok=True)
+    file_path = os.path.join(temp_dir, random_filename)
+
     if (
         isinstance(data, pd.DataFrame)
+        or isinstance(data, pd.Series)
         or isinstance(data, pa.Table)
         or (
             isinstance(data, list) and all(isinstance(item, dict) for item in data[:50])
         )
     ):
 
-        random_filename = f"cfdata_{filename if filename else uuid.uuid4().hex}.parquet"
-        temp_dir = os.path.join(tempfile.gettempdir(), "coded-flows-media")
-        os.makedirs(temp_dir, exist_ok=True)
-        file_path = os.path.join(temp_dir, random_filename)
-
         try:
-
-            # Handle different data types
             if isinstance(data, pd.DataFrame):
                 data.to_parquet(
                     file_path, row_group_size=50000, index=False, engine="pyarrow"
                 )
-
+            elif isinstance(data, pd.Series):
+                data.to_frame().to_parquet(
+                    file_path, row_group_size=50000, index=False, engine="pyarrow"
+                )
             elif isinstance(data, pa.Table):
                 pq.write_table(data, file_path, row_group_size=50000)
 
@@ -180,4 +182,18 @@ def save_data_to_parquet(
         except Exception as e:
             raise Exception(f"❌ Error saving data to parquet: {str(e)}")
     else:
-        raise TypeError(f"Unsupported data type: {type(data)}")
+
+        if isinstance(data, np.ndarray):
+            if data.ndim != 1:
+                raise ValueError(f"NumPy array must be one-dimensional.")
+            pd.DataFrame(data, columns=["value"]).to_parquet(
+                file_path, row_group_size=50000, index=False, engine="pyarrow"
+            )
+        elif isinstance(data, list):
+            pd.DataFrame(data, columns=["value"]).to_parquet(
+                file_path, row_group_size=50000, index=False, engine="pyarrow"
+            )
+        else:
+            raise TypeError(f"Unsupported data type: {type(data)}")
+
+        return file_path
