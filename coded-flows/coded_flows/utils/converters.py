@@ -7,6 +7,7 @@ from collections import deque
 from typing import Any, Callable, Union
 from pydantic_core import MultiHostUrl
 import pandas as pd
+import polars as pl
 import pyarrow as pa
 from ..types import (
     AnyUrl,
@@ -260,28 +261,65 @@ def dataseries_to_type(output_type: str) -> Callable:
     elif output_type == "Set":
         return lambda x: set(x.to_list())
     elif output_type == "Json":
-        return lambda x: x.to_json()
+        return lambda x: (
+            json.dumps(x.to_list())
+            if isinstance(x, pl.Series)
+            else x.to_json(orient="records")
+        )
     elif output_type == "NDArray":
         return lambda x: x.to_numpy()
     elif output_type == "ArrowTable":
-        return lambda x: pa.Table.from_pandas(x.to_frame())
+        return lambda x: (
+            pa.Table.from_arrays([x.to_arrow()], names=[x.name if x.name else "value"])
+            if isinstance(x, pl.Series)
+            else pa.Table.from_pandas(x.to_frame())
+        )
+
+
+def _collect_if_lazy(df: pl.DataFrame | pl.LazyFrame | pd.DataFrame) -> pl.DataFrame:
+    return df.collect() if isinstance(df, pl.LazyFrame) else df
 
 
 def dataframe_to_type(output_type: str) -> Callable:
+
     if output_type == "DataRecords":
-        return lambda x: x.to_dict("records")
+        return lambda x: (
+            _collect_if_lazy(x).to_dicts()
+            if isinstance(_collect_if_lazy(x), pl.DataFrame)
+            else x.to_dict("records")
+        )
     elif output_type == "List":
-        return lambda x: x.to_dict("records")
+        return lambda x: (
+            _collect_if_lazy(x).to_dicts()
+            if isinstance(_collect_if_lazy(x), pl.DataFrame)
+            else x.to_dict("records")
+        )
     elif output_type == "Dict":
-        return lambda x: x.to_dict("list")
+        return lambda x: (
+            _collect_if_lazy(x).to_dict(as_series=False)
+            if isinstance(_collect_if_lazy(x), pl.DataFrame)
+            else x.to_dict("list")
+        )
     elif output_type == "DataDict":
-        return lambda x: x.to_dict("list")
+        return lambda x: (
+            _collect_if_lazy(x).to_dict(as_series=False)
+            if isinstance(_collect_if_lazy(x), pl.DataFrame)
+            else x.to_dict("list")
+        )
     elif output_type == "Json":
-        return lambda x: x.to_json(orient="records")
+        return lambda x: (
+            _collect_if_lazy(x).write_json()
+            if isinstance(_collect_if_lazy(x), pl.DataFrame)
+            else x.to_json(orient="records")
+        )
     elif output_type == "NDArray":
-        return lambda x: x.to_numpy()
+        return lambda x: _collect_if_lazy(x).to_numpy()
     elif output_type == "ArrowTable":
-        return lambda x: pa.Table.from_pandas(x)
+        return lambda x: (
+            _collect_if_lazy(x).to_arrow()
+            if isinstance(_collect_if_lazy(x), pl.DataFrame)
+            else pa.Table.from_pandas(x)
+        )
 
 
 def arrow_to_type(output_type: str) -> Callable:

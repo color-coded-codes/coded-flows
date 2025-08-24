@@ -488,8 +488,8 @@ __all__ = [
     "Any",
     "Null",
     # Data
-    "DataSeries",  # <-- works as a Helper
-    "DataFrame",  # <-- works as a Helper
+    "DataSeries",
+    "DataFrame",
     "ArrowTable",
     "NDArray",
     "DataDict",

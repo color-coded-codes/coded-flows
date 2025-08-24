@@ -1,5 +1,6 @@
 import numpy as np
 import pandas as pd
+import polars as pl
 import pytest
 from PIL import Image
 import pyarrow as pa
@@ -24,6 +25,24 @@ def sample_dataframe():
 def sample_series():
     """Fixture to create a sample pandas Series."""
     return pd.Series([1, 2, 3, 4, 5])
+
+
+@pytest.fixture
+def sample_polars_dataframe():
+    """Fixture to create a sample Polars DataFrame."""
+    return pl.DataFrame({"A": [1, 2, 3], "B": [4, 5, 6], "C": [7, 8, 9]})
+
+
+@pytest.fixture
+def sample_polars_series():
+    """Fixture to create a sample Polars Series."""
+    return pl.Series([1, 2, 3, 4, 5])
+
+
+@pytest.fixture
+def sample_polars_lazyframe():
+    """Fixture to create a sample Polars LazyFrame."""
+    return pl.DataFrame({"A": [1, 2, 3], "B": [4, 5, 6], "C": [7, 8, 9]}).lazy()
 
 
 @pytest.fixture
@@ -57,6 +76,20 @@ def test_valid_dataframe_type(sample_dataframe):
         pytest.fail("ValidationError was raised for a valid type match of a DataFrame")
 
 
+def test_valid_pl_dataframe_type(sample_polars_dataframe):
+    try:
+        is_valid_value_type(sample_polars_dataframe, DataFrame)
+    except ValidationError:
+        pytest.fail("ValidationError was raised for a valid type match of a DataFrame")
+
+
+def test_valid_pl_lazy_dataframe_type(sample_polars_lazyframe):
+    try:
+        is_valid_value_type(sample_polars_lazyframe, DataFrame)
+    except ValidationError:
+        pytest.fail("ValidationError was raised for a valid type match of a DataFrame")
+
+
 def test_invalid_dataframe_type():
     with pytest.raises(ValidationError):
         is_valid_value_type(3, DataFrame)
@@ -66,6 +99,13 @@ def test_invalid_dataframe_type():
 def test_valid_series_type(sample_series):
     try:
         is_valid_value_type(sample_series, DataSeries)
+    except ValidationError:
+        pytest.fail("ValidationError was raised for a valid type match of a DataSeries")
+
+
+def test_valid_pl_series_type(sample_polars_series):
+    try:
+        is_valid_value_type(sample_polars_series, DataSeries)
     except ValidationError:
         pytest.fail("ValidationError was raised for a valid type match of a DataSeries")
 
