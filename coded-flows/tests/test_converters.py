@@ -1,5 +1,6 @@
 import pytest
 import pandas as pd
+import polars as pl
 import pyarrow as pa
 import numpy as np
 from collections import deque
@@ -54,6 +55,24 @@ def sample_dataframe():
 def sample_series():
     """Fixture to create a sample pandas Series."""
     return pd.Series([1, 2, 3, 4, 5])
+
+
+@pytest.fixture
+def sample_polars_dataframe():
+    """Fixture to create a sample Polars DataFrame."""
+    return pl.DataFrame({"A": [1, 2, 3], "B": [4, 5, 6], "C": [7, 8, 9]})
+
+
+@pytest.fixture
+def sample_polars_series():
+    """Fixture to create a sample Polars Series."""
+    return pl.Series([1, 2, 3, 4, 5])
+
+
+@pytest.fixture
+def sample_polars_lazyframe():
+    """Fixture to create a sample Polars LazyFrame."""
+    return pl.DataFrame({"A": [1, 2, 3], "B": [4, 5, 6], "C": [7, 8, 9]}).lazy()
 
 
 @pytest.fixture
@@ -154,7 +173,7 @@ def test_dataseries_to_list(sample_series):
     assert isinstance(output, list)
 
 
-def test_dataseries_to_list(sample_series):
+def test_dataseries_to_tuple(sample_series):
     try:
         output = convert_type(sample_series, "DataSeries", "Tuple")
     except TypeError as e:
@@ -189,6 +208,62 @@ def test_dataseries_to_numpy(sample_series):
 def test_dataseries_to_arrow(sample_series):
     try:
         output = convert_type(sample_series, "DataSeries", "ArrowTable")
+    except TypeError as e:
+        pytest.fail(f"TypeError encountered for DataSeries -> ArrowTable: {e}")
+    assert isinstance(output, pa.Table)
+
+
+def test_pl_dataseries_to_dataframe(sample_polars_series):
+    try:
+        output = convert_type(sample_polars_series, "DataSeries", "DataFrame")
+    except TypeError as e:
+        pytest.fail(f"TypeError encountered for DataSeries -> Dataframe: {e}")
+    assert isinstance(output, pl.DataFrame)
+
+
+def test_pl_dataseries_to_list(sample_polars_series):
+    try:
+        output = convert_type(sample_polars_series, "DataSeries", "List")
+    except TypeError as e:
+        pytest.fail(f"TypeError encountered for DataSeries -> List: {e}")
+    assert isinstance(output, list)
+
+
+def test_pl_dataseries_to_tuple(sample_polars_series):
+    try:
+        output = convert_type(sample_polars_series, "DataSeries", "Tuple")
+    except TypeError as e:
+        pytest.fail(f"TypeError encountered for DataSeries -> Tuple: {e}")
+    assert isinstance(output, tuple)
+
+
+def test_pl_dataseries_to_set(sample_polars_series):
+    try:
+        output = convert_type(sample_polars_series, "DataSeries", "Set")
+    except TypeError as e:
+        pytest.fail(f"TypeError encountered for DataSeries -> Set: {e}")
+    assert isinstance(output, set)
+
+
+def test_pl_dataseries_to_json(sample_polars_series):
+    try:
+        output = convert_type(sample_polars_series, "DataSeries", "Json")
+    except TypeError as e:
+        pytest.fail(f"TypeError encountered for DataSeries -> Json: {e}")
+    assert isinstance(output, str)
+
+
+def test_pl_dataseries_to_numpy(sample_polars_series):
+    try:
+        output = convert_type(sample_polars_series, "DataSeries", "NDArray")
+    except TypeError as e:
+        pytest.fail(f"TypeError encountered for DataSeries -> NDArray: {e}")
+    assert isinstance(output, np.ndarray)
+
+
+def test_pl_dataseries_to_arrow(sample_polars_series):
+    try:
+        output = convert_type(sample_polars_series, "DataSeries", "ArrowTable")
     except TypeError as e:
         pytest.fail(f"TypeError encountered for DataSeries -> ArrowTable: {e}")
     assert isinstance(output, pa.Table)
@@ -245,6 +320,118 @@ def test_dataframe_to_numpy(sample_dataframe):
 def test_dataframe_to_arrow(sample_dataframe):
     try:
         output = convert_type(sample_dataframe, "DataFrame", "ArrowTable")
+    except TypeError as e:
+        pytest.fail(f"TypeError encountered for DataFrame -> ArrowTable: {e}")
+    assert isinstance(output, pa.Table)
+
+
+def test_pl_dataframe_to_datarecords(sample_polars_dataframe):
+    try:
+        output = convert_type(sample_polars_dataframe, "DataFrame", "DataRecords")
+    except TypeError as e:
+        pytest.fail(f"TypeError encountered for DataFrame -> DataRecords: {e}")
+    assert isinstance(output, list) and all(isinstance(item, dict) for item in output)
+
+
+def test_pl_dataframe_to_list(sample_polars_dataframe):
+    try:
+        output = convert_type(sample_polars_dataframe, "DataFrame", "List")
+    except TypeError as e:
+        pytest.fail(f"TypeError encountered for DataFrame -> List: {e}")
+    assert isinstance(output, list)
+
+
+def test_pl_dataframe_to_dict(sample_polars_dataframe):
+    try:
+        output = convert_type(sample_polars_dataframe, "DataFrame", "Dict")
+    except TypeError as e:
+        pytest.fail(f"TypeError encountered for DataFrame -> Dict: {e}")
+    assert isinstance(output, dict)
+
+
+def test_pl_dataframe_to_datadict(sample_polars_dataframe):
+    try:
+        output = convert_type(sample_polars_dataframe, "DataFrame", "DataDict")
+    except TypeError as e:
+        pytest.fail(f"TypeError encountered for DataFrame -> DataDict: {e}")
+    assert all(isinstance(k, str) and isinstance(v, list) for k, v in output.items())
+
+
+def test_pl_dataframe_to_json(sample_polars_dataframe):
+    try:
+        output = convert_type(sample_polars_dataframe, "DataFrame", "Json")
+    except TypeError as e:
+        pytest.fail(f"TypeError encountered for DataFrame -> Json: {e}")
+    assert isinstance(output, str)
+
+
+def test_pl_dataframe_to_numpy(sample_polars_dataframe):
+    try:
+        output = convert_type(sample_polars_dataframe, "DataFrame", "NDArray")
+    except TypeError as e:
+        pytest.fail(f"TypeError encountered for DataFrame -> NDArray: {e}")
+    assert isinstance(output, np.ndarray)
+
+
+def test_pl_dataframe_to_arrow(sample_polars_dataframe):
+    try:
+        output = convert_type(sample_polars_dataframe, "DataFrame", "ArrowTable")
+    except TypeError as e:
+        pytest.fail(f"TypeError encountered for DataFrame -> ArrowTable: {e}")
+    assert isinstance(output, pa.Table)
+
+
+def test_pl_lazy_dataframe_to_datarecords(sample_polars_lazyframe):
+    try:
+        output = convert_type(sample_polars_lazyframe, "DataFrame", "DataRecords")
+    except TypeError as e:
+        pytest.fail(f"TypeError encountered for DataFrame -> DataRecords: {e}")
+    assert isinstance(output, list) and all(isinstance(item, dict) for item in output)
+
+
+def test_pl_lazy_dataframe_to_list(sample_polars_lazyframe):
+    try:
+        output = convert_type(sample_polars_lazyframe, "DataFrame", "List")
+    except TypeError as e:
+        pytest.fail(f"TypeError encountered for DataFrame -> List: {e}")
+    assert isinstance(output, list)
+
+
+def test_pl_lazy_dataframe_to_dict(sample_polars_lazyframe):
+    try:
+        output = convert_type(sample_polars_lazyframe, "DataFrame", "Dict")
+    except TypeError as e:
+        pytest.fail(f"TypeError encountered for DataFrame -> Dict: {e}")
+    assert isinstance(output, dict)
+
+
+def test_pl_lazy_dataframe_to_datadict(sample_polars_lazyframe):
+    try:
+        output = convert_type(sample_polars_lazyframe, "DataFrame", "DataDict")
+    except TypeError as e:
+        pytest.fail(f"TypeError encountered for DataFrame -> DataDict: {e}")
+    assert all(isinstance(k, str) and isinstance(v, list) for k, v in output.items())
+
+
+def test_pl_lazy_dataframe_to_json(sample_polars_lazyframe):
+    try:
+        output = convert_type(sample_polars_lazyframe, "DataFrame", "Json")
+    except TypeError as e:
+        pytest.fail(f"TypeError encountered for DataFrame -> Json: {e}")
+    assert isinstance(output, str)
+
+
+def test_pl_lazy_dataframe_to_numpy(sample_polars_lazyframe):
+    try:
+        output = convert_type(sample_polars_lazyframe, "DataFrame", "NDArray")
+    except TypeError as e:
+        pytest.fail(f"TypeError encountered for DataFrame -> NDArray: {e}")
+    assert isinstance(output, np.ndarray)
+
+
+def test_pl_lazy_dataframe_to_arrow(sample_polars_lazyframe):
+    try:
+        output = convert_type(sample_polars_lazyframe, "DataFrame", "ArrowTable")
     except TypeError as e:
         pytest.fail(f"TypeError encountered for DataFrame -> ArrowTable: {e}")
     assert isinstance(output, pa.Table)

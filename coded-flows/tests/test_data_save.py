@@ -253,3 +253,60 @@ def test_arrow_table_to_parquet():
     assert table.equals(table_loaded), "Saved and loaded Arrow tables are not equal."
 
     os.remove(file_path)
+
+
+def test_numerical_list_to_parquet():
+    numerical_list = [1, 2, 3, 4, 5]
+    file_path = save_data_to_parquet(numerical_list)
+
+    # Check file existence
+    assert os.path.exists(file_path), "Output file does not exist."
+
+    # Read back from Parquet into DataFrame
+    df_loaded = pd.read_parquet(file_path, engine="pyarrow")
+
+    # Convert original list to DataFrame for comparison
+    expected_df = pd.DataFrame(
+        {"value": numerical_list}
+    )  # Assuming single column with default name
+
+    pdt.assert_frame_equal(expected_df.sort_index(axis=1), df_loaded.sort_index(axis=1))
+    os.remove(file_path)
+
+
+def test_numpy_array_to_parquet():
+    import numpy as np
+
+    numpy_array = np.array([10, 20, 30, 40, 50])
+    file_path = save_data_to_parquet(numpy_array)
+
+    # Check file existence
+    assert os.path.exists(file_path), "Output file does not exist."
+
+    # Read back from Parquet into DataFrame
+    df_loaded = pd.read_parquet(file_path, engine="pyarrow")
+
+    # Convert original numpy array to DataFrame for comparison
+    expected_df = pd.DataFrame(
+        {"value": numpy_array}
+    )  # Assuming single column with default name
+
+    pdt.assert_frame_equal(expected_df.sort_index(axis=1), df_loaded.sort_index(axis=1))
+    os.remove(file_path)
+
+
+def test_pandas_series_to_parquet():
+    pandas_series = pd.Series([100, 200, 300, 400, 500], name="values")
+    file_path = save_data_to_parquet(pandas_series)
+
+    # Check file existence
+    assert os.path.exists(file_path), "Output file does not exist."
+
+    # Read back from Parquet into DataFrame
+    df_loaded = pd.read_parquet(file_path, engine="pyarrow")
+
+    # Convert original Series to DataFrame for comparison
+    expected_df = pandas_series.to_frame()
+
+    pdt.assert_frame_equal(expected_df.sort_index(axis=1), df_loaded.sort_index(axis=1))
+    os.remove(file_path)
