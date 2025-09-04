@@ -65,7 +65,7 @@ def test_invalid_data_type():
     invalid_data = {1, 2, 3}  # Set, not supported
     labels = ["x"]
 
-    with pytest.raises(TypeError, match="Unsupported data type: <class 'set'>"):
+    with pytest.raises(TypeError, match="Unsupported data type: set"):
         save_data_to_json(invalid_data, labels=labels)
 
 
