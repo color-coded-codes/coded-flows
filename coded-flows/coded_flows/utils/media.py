@@ -129,7 +129,7 @@ def save_data_to_json(
         elif isinstance(data, tuple):
             col_data = list(data)
         else:
-            raise TypeError(f"Unsupported data type: {type(data)}")
+            raise TypeError(f"Unsupported data type: {type(data).__name__}")
 
         normalized_data.append(pd.Series(col_data, name=label))
         max_length = max(max_length, len(col_data))
@@ -160,7 +160,6 @@ def save_data_to_parquet(
             isinstance(data, list) and all(isinstance(item, dict) for item in data[:50])
         )
     ):
-
         try:
             if isinstance(data, pd.DataFrame):
                 data.to_parquet(
@@ -194,6 +193,32 @@ def save_data_to_parquet(
                 file_path, row_group_size=50000, index=False, engine="pyarrow"
             )
         else:
-            raise TypeError(f"Unsupported data type: {type(data)}")
+            raise TypeError(f"Unsupported data type: {type(data).__name__}")
 
         return file_path
+
+
+def save_text_to_temp(
+    data: Any,
+    filename=None,
+) -> str:
+    random_filename = f"cfdata_{filename if filename else uuid.uuid4().hex}.txt"
+    temp_dir = os.path.join(tempfile.gettempdir(), "coded-flows-media")
+    os.makedirs(temp_dir, exist_ok=True)
+    file_path = os.path.join(temp_dir, random_filename)
+
+    text_to_write = ""
+    if isinstance(data, str):
+        text_to_write = data
+    elif isinstance(data, (bytes, bytearray)):
+        try:
+            text_to_write = data.decode("utf-8")
+        except UnicodeDecodeError:
+            raise TypeError(f"Data is bytes but not decodable with 'utf-8' encoding.")
+    else:
+        raise TypeError(f"Expected str or bytes, got {type(data).__name__}")
+
+    with open(file_path, "w", encoding="utf-8") as f:
+        f.write(text_to_write)
+
+    return file_path
