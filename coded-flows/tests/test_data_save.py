@@ -1,6 +1,7 @@
 import os
 import pytest
 import pandas as pd
+import polars as pl
 import pandas.testing as pdt
 import pyarrow as pa
 import pyarrow.parquet as pq
@@ -14,10 +15,11 @@ def test_valid_inputs():
     arr = np.array([20, 21, 22])
     data_records = [{"key1": 30}, {"key1": 31}, {"key1": 32}]
     arrow_table = pa.table({"col1": [1, 2, 3], "col2": ["a", "b", "c"]})
+    dfp = pl.DataFrame({"uu": [1, 2, 3]})
 
-    labels = ["x", "y", "z", "w", "col1"]
+    labels = ["x", "y", "z", "w", "col1", "uu"]
     file_path = save_data_to_json(
-        df, series, arr, data_records, arrow_table, labels=labels
+        df, series, arr, data_records, arrow_table, dfp, labels=labels
     )
 
     # Check file existence
@@ -27,7 +29,7 @@ def test_valid_inputs():
     with open(file_path, "r") as f:
         json_content = f.read()
 
-    expected_content = '[{"x":1,"y":100,"z":20,"w":null,"col1":1},{"x":2,"y":200,"z":21,"w":null,"col1":2},{"x":3,"y":300,"z":22,"w":null,"col1":3}]'
+    expected_content = '[{"x":1,"y":100,"z":20,"w":null,"col1":1,"uu":1},{"x":2,"y":200,"z":21,"w":null,"col1":2,"uu":2},{"x":3,"y":300,"z":22,"w":null,"col1":3,"uu":3}]'
     assert json_content.strip() == expected_content, "JSON content mismatch."
     os.remove(file_path)
 
@@ -49,6 +51,23 @@ def test_missing_column_in_dataframe():
 
     with pytest.raises(ValueError, match="Label 'z' not found in DataFrame columns."):
         save_data_to_json(df, labels=labels)
+
+
+def test_missing_column_in_polars_dataframe():
+    df = pl.DataFrame({"x": [1, 2, 3]})
+    labels = ["z"]
+
+    with pytest.raises(ValueError, match="Label 'z' not found in DataFrame columns."):
+        save_data_to_json(df, labels=labels)
+
+
+def test_missing_column_in_polars_lazyframe():
+    df = pl.DataFrame({"x": [1, 2, 3]})
+    df_lazy = df.lazy()
+    labels = ["z"]
+
+    with pytest.raises(ValueError, match="Label 'z' not found in DataFrame columns."):
+        save_data_to_json(df_lazy, labels=labels)
 
 
 def test_invalid_numpy_array():
@@ -90,15 +109,18 @@ def test_variable_lengths():
 def test_series_input():
     series1 = pd.Series([1, 2, 3], name="x")
     series2 = pd.Series([10, 20, 30], name="y")
-    labels = ["x", "y"]
+    series3 = pl.Series("z", [100, 200, 300])
+    labels = ["x", "y", "z"]
 
-    file_path = save_data_to_json(series1, series2, labels=labels)
+    file_path = save_data_to_json(series1, series2, series3, labels=labels)
 
     # Check JSON content
     with open(file_path, "r") as f:
         json_content = f.read()
 
-    expected_content = '[{"x":1,"y":10},{"x":2,"y":20},{"x":3,"y":30}]'
+    expected_content = (
+        '[{"x":1,"y":10,"z":100},{"x":2,"y":20,"z":200},{"x":3,"y":30,"z":300}]'
+    )
     assert (
         json_content.strip() == expected_content
     ), "JSON content mismatch for Series inputs."
@@ -119,6 +141,25 @@ def test_save_data_to_json_is_table_true_with_dataframe():
     with open(json_path, "r") as f:
         saved_data = pd.read_json(f, orient="records")
         pd.testing.assert_frame_equal(saved_data, df)
+
+    # Clean up
+    os.remove(json_path)
+
+
+def test_save_data_to_json_is_table_true_with_polars_dataframe():
+    # Create a sample DataFrame
+    df = pl.DataFrame({"col1": [1, 2, 3], "col2": ["a", "b", "c"]})
+
+    # Call the function with `is_table=True`
+    json_path = save_data_to_json(df, is_table=True)
+
+    # Assert the file exists
+    assert os.path.exists(json_path), "JSON file was not created."
+
+    # Assert the file content matches the DataFrame content
+    with open(json_path, "r") as f:
+        saved_data = pl.read_json(f)
+        assert df.equals(saved_data)
 
     # Clean up
     os.remove(json_path)
@@ -226,6 +267,20 @@ def test_save_data_to_json_is_table_true_series():
     os.remove(json_path)
 
 
+def test_save_data_to_json_is_table_true_polars_series():
+    # Series input
+    series = pl.Series("col1", [1, 2, 3])
+    json_path = save_data_to_json(series, is_table=True)
+    assert os.path.exists(json_path)
+    with open(json_path, "r") as f:
+        saved_data = pl.read_json(f)
+        expected_df = pl.DataFrame({"values": series})
+        assert expected_df.equals(saved_data)
+
+    # Clean up
+    os.remove(json_path)
+
+
 def test_dataframe_to_parquet():
     df = pd.DataFrame({"x": [1, 2, 3], "z": [7, 8, 9]})
 
@@ -238,6 +293,37 @@ def test_dataframe_to_parquet():
     df_loaded = pd.read_parquet(file_path, engine="pyarrow")
 
     pdt.assert_frame_equal(df.sort_index(axis=1), df_loaded.sort_index(axis=1))
+    os.remove(file_path)
+
+
+def test_polars_dataframe_to_parquet():
+    df = pl.DataFrame({"x": [1, 2, 3], "z": [7, 8, 9]})
+
+    file_path = save_data_to_parquet(df)
+
+    # Check file existence
+    assert os.path.exists(file_path), "Output file does not exist."
+
+    # Read back from Parquet into DataFrame
+    df_loaded = pl.read_parquet(file_path, use_pyarrow=True)
+
+    assert df.equals(df_loaded)
+    os.remove(file_path)
+
+
+def test_polars_lazyframe_to_parquet():
+    df = pl.DataFrame({"x": [1, 2, 3], "z": [7, 8, 9]})
+    dfl = df.lazy()
+
+    file_path = save_data_to_parquet(dfl)
+
+    # Check file existence
+    assert os.path.exists(file_path), "Output file does not exist."
+
+    # Read back from Parquet into DataFrame
+    df_loaded = pl.read_parquet(file_path, use_pyarrow=True)
+
+    assert df.equals(df_loaded)
     os.remove(file_path)
 
 
@@ -309,4 +395,21 @@ def test_pandas_series_to_parquet():
     expected_df = pandas_series.to_frame()
 
     pdt.assert_frame_equal(expected_df.sort_index(axis=1), df_loaded.sort_index(axis=1))
+    os.remove(file_path)
+
+
+def test_polars_series_to_parquet():
+    polars_series = pl.Series("values", [100, 200, 300, 400, 500])
+    file_path = save_data_to_parquet(polars_series)
+
+    # Check file existence
+    assert os.path.exists(file_path), "Output file does not exist."
+
+    # Read back from Parquet into DataFrame
+    df_loaded = pl.read_parquet(file_path, use_pyarrow=True)
+
+    # Convert original Series to DataFrame for comparison
+    expected_df = polars_series.to_frame()
+
+    assert expected_df.equals(df_loaded)
     os.remove(file_path)

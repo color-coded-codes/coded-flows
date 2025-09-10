@@ -6,6 +6,7 @@ import pyarrow as pa
 import pyarrow.parquet as pq
 import numpy as np
 import pandas as pd
+import polars as pl
 from typing import Union, List, Dict, Any
 from io import BytesIO
 from PIL import Image
@@ -58,19 +59,36 @@ def _save_arrow_table_to_json(table: pa.Table, filename: str = None) -> str:
     records = table.to_pylist()
     with open(file_path, "w") as f:
         json.dump(records, f, separators=(",", ":"))
-
     return file_path
 
 
-# List, DataSeries, NDArray, DataRecords, DataFrame, Arrow
+def _save_polars_to_json(df: pl.DataFrame, filename: str = None) -> str:
+    random_filename = f"cfdata_{filename if filename else uuid.uuid4().hex}.json"
+    temp_dir = os.path.join(tempfile.gettempdir(), "coded-flows-media")
+    os.makedirs(temp_dir, exist_ok=True)
+    file_path = os.path.join(temp_dir, random_filename)
+    df.write_json(file_path)
+    return file_path
+
+
+# List, DataSeries, NDArray, DataRecords, DataFrame, Arrow, Polars
 def save_data_to_json(
     *data_args: Union[
-        pd.DataFrame, pd.Series, pa.Table, np.ndarray, List[Dict[str, Any]], List[Any]
+        pd.DataFrame,
+        pd.Series,
+        pa.Table,
+        np.ndarray,
+        List[Dict[str, Any]],
+        List[Any],
+        pl.DataFrame,
+        pl.Series,
+        pl.LazyFrame,
     ],
     labels: List[str] = [],
     is_table: bool = False,
     filename: str = None,
 ) -> str:
+
     labels = ["values"] if is_table else labels
 
     if not is_table and len(data_args) != len(labels):
@@ -86,6 +104,8 @@ def save_data_to_json(
     if is_table and (
         isinstance(data, pd.DataFrame)
         or isinstance(data, pa.Table)
+        or isinstance(data, pl.DataFrame)
+        or isinstance(data, pl.LazyFrame)
         or (
             isinstance(data, list) and all(isinstance(item, dict) for item in data[:50])
         )
@@ -95,6 +115,11 @@ def save_data_to_json(
             table_df = data
         elif isinstance(data, pa.Table):
             return _save_arrow_table_to_json(data, filename)
+        elif isinstance(data, pl.DataFrame):
+            return _save_polars_to_json(data, filename)
+        elif isinstance(data, pl.LazyFrame):
+            # Collect LazyFrame to DataFrame first
+            return _save_polars_to_json(data.collect(), filename)
         else:
             table_df = pd.DataFrame.from_records(data)
 
@@ -112,6 +137,17 @@ def save_data_to_json(
             if label not in data.column_names:
                 raise ValueError(f"Label '{label}' not found in Arrow table columns.")
             col_data = data.column(label).to_pylist()
+        elif isinstance(data, pl.DataFrame):
+            if label not in data.columns:
+                raise ValueError(f"Label '{label}' not found in DataFrame columns.")
+            col_data = data[label].to_list()
+        elif isinstance(data, pl.LazyFrame):
+            collected_data = data.collect()
+            if label not in collected_data.columns:
+                raise ValueError(f"Label '{label}' not found in DataFrame columns.")
+            col_data = collected_data[label].to_list()
+        elif isinstance(data, pl.Series):
+            col_data = data.to_list()
         elif isinstance(data, pd.Series):
             col_data = data.values
         elif isinstance(data, np.ndarray):
@@ -142,7 +178,15 @@ def save_data_to_json(
 
 def save_data_to_parquet(
     data: Union[
-        pd.DataFrame, pd.Series, pa.Table, np.ndarray, List[Dict[str, Any]], List[Any]
+        pd.DataFrame,
+        pd.Series,
+        pl.DataFrame,
+        pl.Series,
+        pl.LazyFrame,
+        pa.Table,
+        np.ndarray,
+        List[Dict[str, Any]],
+        List[Any],
     ],
     filename=None,
 ) -> str:
@@ -155,6 +199,9 @@ def save_data_to_parquet(
     if (
         isinstance(data, pd.DataFrame)
         or isinstance(data, pd.Series)
+        or isinstance(data, pl.DataFrame)
+        or isinstance(data, pl.LazyFrame)
+        or isinstance(data, pl.Series)
         or isinstance(data, pa.Table)
         or (
             isinstance(data, list) and all(isinstance(item, dict) for item in data[:50])
@@ -169,9 +216,18 @@ def save_data_to_parquet(
                 data.to_frame().to_parquet(
                     file_path, row_group_size=50000, index=False, engine="pyarrow"
                 )
+            elif isinstance(data, pl.DataFrame):
+                data.write_parquet(file_path, row_group_size=50000, use_pyarrow=True)
+            elif isinstance(data, pl.LazyFrame):
+                data.collect().write_parquet(
+                    file_path, row_group_size=50000, use_pyarrow=True
+                )
+            elif isinstance(data, pl.Series):
+                data.to_frame().write_parquet(
+                    file_path, row_group_size=50000, use_pyarrow=True
+                )
             elif isinstance(data, pa.Table):
                 pq.write_table(data, file_path, row_group_size=50000)
-
             else:
                 table = pa.Table.from_pylist(data)
                 pq.write_table(table, file_path, row_group_size=50000)
