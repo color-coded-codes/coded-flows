@@ -85,13 +85,17 @@ def save_data_to_json(
         pl.LazyFrame,
     ],
     labels: List[str] = [],
+    labels_refs: List[str] = [],
     is_table: bool = False,
     filename: str = None,
 ) -> str:
 
     labels = ["values"] if is_table else labels
+    labels_refs = ["values"] if is_table else labels_refs
 
-    if not is_table and len(data_args) != len(labels):
+    if not is_table and (
+        len(data_args) != len(labels) or len(labels) != len(labels_refs)
+    ):
         raise ValueError(
             "The number of data arguments must match the number of labels."
         )
@@ -128,7 +132,7 @@ def save_data_to_json(
     normalized_data = []
     max_length = 0
 
-    for data, label in zip(data_args, labels):
+    for data, label, label_ref in zip(data_args, labels, labels_refs):
         if isinstance(data, pd.DataFrame):
             if label not in data.columns:
                 raise ValueError(f"Label '{label}' not found in DataFrame columns.")
@@ -167,7 +171,7 @@ def save_data_to_json(
         else:
             raise TypeError(f"Unsupported data type: {type(data).__name__}")
 
-        normalized_data.append(pd.Series(col_data, name=label))
+        normalized_data.append(pd.Series(col_data, name=label_ref))
         max_length = max(max_length, len(col_data))
 
     combined_df = pd.concat(normalized_data, axis=1)

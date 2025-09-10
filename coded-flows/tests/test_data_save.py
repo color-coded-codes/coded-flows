@@ -19,7 +19,14 @@ def test_valid_inputs():
 
     labels = ["x", "y", "z", "w", "col1", "uu"]
     file_path = save_data_to_json(
-        df, series, arr, data_records, arrow_table, dfp, labels=labels
+        df,
+        series,
+        arr,
+        data_records,
+        arrow_table,
+        dfp,
+        labels=labels,
+        labels_refs=["a", "b", "c", "d", "e", "f"],
     )
 
     # Check file existence
@@ -29,12 +36,12 @@ def test_valid_inputs():
     with open(file_path, "r") as f:
         json_content = f.read()
 
-    expected_content = '[{"x":1,"y":100,"z":20,"w":null,"col1":1,"uu":1},{"x":2,"y":200,"z":21,"w":null,"col1":2,"uu":2},{"x":3,"y":300,"z":22,"w":null,"col1":3,"uu":3}]'
+    expected_content = '[{"a":1,"b":100,"c":20,"d":null,"e":1,"f":1},{"a":2,"b":200,"c":21,"d":null,"e":2,"f":2},{"a":3,"b":300,"c":22,"d":null,"e":3,"f":3}]'
     assert json_content.strip() == expected_content, "JSON content mismatch."
     os.remove(file_path)
 
 
-def test_mismatched_labels():
+def test_mismatched_labels1():
     df = pd.DataFrame({"x": [1, 2, 3]})
     labels = ["x", "y"]
 
@@ -45,12 +52,42 @@ def test_mismatched_labels():
         save_data_to_json(df, labels=labels)
 
 
+def test_mismatched_labels2():
+    df = pd.DataFrame({"x": [1, 2, 3]})
+    labels = ["x"]
+
+    with pytest.raises(
+        ValueError,
+        match="The number of data arguments must match the number of labels.",
+    ):
+        save_data_to_json(df, labels=labels)
+
+
+def test_same_label():
+    df1 = pd.DataFrame({"x": [1, 2, 3], "z": [7, 8, 9]})
+    df2 = pd.DataFrame({"x": [1, 2, 3], "z": [7, 8, 9]})
+
+    labels = ["x", "x"]
+    file_path = save_data_to_json(df1, df2, labels=labels, labels_refs=["a", "b"])
+
+    # Check file existence
+    assert os.path.exists(file_path), "Output file does not exist."
+
+    # Check JSON content
+    with open(file_path, "r") as f:
+        json_content = f.read()
+
+    expected_content = '[{"a":1,"b":1},{"a":2,"b":2},{"a":3,"b":3}]'
+    assert json_content.strip() == expected_content, "JSON content mismatch."
+    os.remove(file_path)
+
+
 def test_missing_column_in_dataframe():
     df = pd.DataFrame({"x": [1, 2, 3]})
     labels = ["z"]
 
     with pytest.raises(ValueError, match="Label 'z' not found in DataFrame columns."):
-        save_data_to_json(df, labels=labels)
+        save_data_to_json(df, labels=labels, labels_refs=labels)
 
 
 def test_missing_column_in_polars_dataframe():
@@ -58,7 +95,7 @@ def test_missing_column_in_polars_dataframe():
     labels = ["z"]
 
     with pytest.raises(ValueError, match="Label 'z' not found in DataFrame columns."):
-        save_data_to_json(df, labels=labels)
+        save_data_to_json(df, labels=labels, labels_refs=labels)
 
 
 def test_missing_column_in_polars_lazyframe():
@@ -67,7 +104,7 @@ def test_missing_column_in_polars_lazyframe():
     labels = ["z"]
 
     with pytest.raises(ValueError, match="Label 'z' not found in DataFrame columns."):
-        save_data_to_json(df_lazy, labels=labels)
+        save_data_to_json(df_lazy, labels=labels, labels_refs=labels)
 
 
 def test_invalid_numpy_array():
@@ -77,7 +114,7 @@ def test_invalid_numpy_array():
     with pytest.raises(
         ValueError, match="NumPy array for label 'x' must be one-dimensional."
     ):
-        save_data_to_json(arr, labels=labels)
+        save_data_to_json(arr, labels=labels, labels_refs=labels)
 
 
 def test_invalid_data_type():
@@ -85,7 +122,7 @@ def test_invalid_data_type():
     labels = ["x"]
 
     with pytest.raises(TypeError, match="Unsupported data type: set"):
-        save_data_to_json(invalid_data, labels=labels)
+        save_data_to_json(invalid_data, labels=labels, labels_refs=labels)
 
 
 def test_variable_lengths():
@@ -93,7 +130,7 @@ def test_variable_lengths():
     arr = np.array([20, 21, 22])  # Different length
     labels = ["x", "y"]
 
-    file_path = save_data_to_json(df, arr, labels=labels)
+    file_path = save_data_to_json(df, arr, labels=labels, labels_refs=labels)
 
     # Check JSON content
     with open(file_path, "r") as f:
@@ -112,7 +149,9 @@ def test_series_input():
     series3 = pl.Series("z", [100, 200, 300])
     labels = ["x", "y", "z"]
 
-    file_path = save_data_to_json(series1, series2, series3, labels=labels)
+    file_path = save_data_to_json(
+        series1, series2, series3, labels=labels, labels_refs=labels
+    )
 
     # Check JSON content
     with open(file_path, "r") as f:
