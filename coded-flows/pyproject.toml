@@ -1,6 +1,6 @@
 [tool.poetry]
 name = "coded-flows"
-version = "0.6.5"
+version = "0.7.0"
 description = "Various utilities for Coded Flows"
 authors = ["COLOR CODED CODES <contact@colorcoded.codes>"]
 readme = "README.md"
