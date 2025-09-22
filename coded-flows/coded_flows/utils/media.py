@@ -214,21 +214,40 @@ def save_data_to_parquet(
         try:
             if isinstance(data, pd.DataFrame):
                 data.to_parquet(
-                    file_path, row_group_size=50000, index=False, engine="pyarrow"
+                    file_path,
+                    row_group_size=50000,
+                    index=False,
+                    engine="pyarrow",
+                    compression="snappy",
                 )
             elif isinstance(data, pd.Series):
                 data.to_frame().to_parquet(
-                    file_path, row_group_size=50000, index=False, engine="pyarrow"
+                    file_path,
+                    row_group_size=50000,
+                    index=False,
+                    engine="pyarrow",
+                    compression="snappy",
                 )
             elif isinstance(data, pl.DataFrame):
-                data.write_parquet(file_path, row_group_size=50000, use_pyarrow=True)
+                data.write_parquet(
+                    file_path,
+                    row_group_size=50000,
+                    use_pyarrow=True,
+                    compression="snappy",
+                )
             elif isinstance(data, pl.LazyFrame):
                 data.collect().write_parquet(
-                    file_path, row_group_size=50000, use_pyarrow=True
+                    file_path,
+                    row_group_size=50000,
+                    use_pyarrow=True,
+                    compression="snappy",
                 )
             elif isinstance(data, pl.Series):
                 data.to_frame().write_parquet(
-                    file_path, row_group_size=50000, use_pyarrow=True
+                    file_path,
+                    row_group_size=50000,
+                    use_pyarrow=True,
+                    compression="snappy",
                 )
             elif isinstance(data, pa.Table):
                 pq.write_table(data, file_path, row_group_size=50000)
