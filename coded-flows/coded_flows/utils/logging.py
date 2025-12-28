@@ -117,6 +117,9 @@ class CodedFlowsLogger:
         self.logger = logging.getLogger(name)
         self.logger.setLevel(logging.DEBUG)  # Set to DEBUG, handlers will filter
 
+        # Prevent propagation to root logger to avoid duplicate logs
+        self.logger.propagate = False
+
         # Remove existing handlers to avoid duplicates
         self.logger.handlers.clear()
 
